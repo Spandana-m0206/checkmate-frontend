@@ -1,4 +1,4 @@
-import type { GameStatus, GameResult } from "../game/type";
+import type { GameStatus, GameResult, GameMode } from "../game/type";
 
 export interface PlayerInfo {
   _id: string;
@@ -14,6 +14,7 @@ export interface Game {
   winnerId: PlayerInfo | null;
   status: GameStatus;
   result: GameResult | null;
+  mode: GameMode;
   startedAt: string;
   endedAt: string | null;
   totalMoves: number;

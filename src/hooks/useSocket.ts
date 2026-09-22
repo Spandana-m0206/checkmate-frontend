@@ -44,6 +44,10 @@ export function useSocket() {
       useMatchmakingStore.getState().setRoomCreated(data.code);
     });
 
+    socket.on("roomCancelled", () => {
+      useMatchmakingStore.getState().setIdle();
+    });
+
     socket.on("gameStarted", (data: GameStartedPayload) => {
       useGameStore.getState().setGameStarted(data);
       useMatchmakingStore.getState().reset();
@@ -92,8 +96,8 @@ export function useSocket() {
       },
     );
 
-    socket.on("error", (_data: SocketErrorPayload) => {
-      // Could set an error toast store here in the future
+    socket.on("error", (data: SocketErrorPayload) => {
+      useMatchmakingStore.getState().setError(data.message);
     });
 
     return () => {

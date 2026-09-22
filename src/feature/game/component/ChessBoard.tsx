@@ -7,6 +7,7 @@ import { useGameStore } from "../store";
 import { useChessGame } from "../hooks/useChessGame";
 import { getSquaresForOrientation } from "../../../utils/chess";
 import { getSocket } from "../../../services/socket";
+import boardImage from "../../../assets/board/board.png";
 import type { PieceColor } from "../type";
 
 export default function ChessBoard() {
@@ -99,7 +100,7 @@ export default function ChessBoard() {
 
   if (!board) {
     return (
-      <div className="aspect-square w-full rounded-lg bg-amber-900/20 dark:bg-amber-800/10" />
+      <div className="aspect-square w-full rounded-lg bg-surface-sunken" />
     );
   }
 
@@ -120,7 +121,16 @@ export default function ChessBoard() {
 
   return (
     <div className="relative aspect-square w-full">
-      <div className="grid h-full w-full grid-cols-8 grid-rows-8 overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
+      {/* Board background image */}
+      <img
+        src={boardImage}
+        alt=""
+        className="absolute inset-0 h-full w-full rounded-lg"
+        draggable={false}
+      />
+
+      {/* 8×8 transparent interaction grid on top of the board image */}
+      <div className="relative grid h-full w-full grid-cols-8 grid-rows-8 overflow-hidden rounded-lg">
         {squares.flat().map((square) => {
           const piece = getPieceAt(square);
           const isSelected = selectedSquare === square;

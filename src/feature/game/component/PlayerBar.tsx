@@ -17,14 +17,14 @@ export default function PlayerBar({
   isGameActive,
 }: PlayerBarProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 dark:bg-gray-800">
+    <div className="flex items-center justify-between rounded-md border border-edge bg-surface px-3 py-2">
       <div className="flex items-center gap-2">
         <Avatar src={profileImage} alt={name} size="sm" />
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <span className="text-sm font-semibold text-content">
           {name}
         </span>
         {isCurrentTurn && isGameActive && (
-          <span className="h-2 w-2 rounded-full bg-green-500" aria-label="Active turn" />
+          <span className="h-2 w-2 rounded-full bg-accent" aria-label="Active turn" />
         )}
       </div>
       <TurnTimer seconds={timerSeconds} isActive={isCurrentTurn && isGameActive} />

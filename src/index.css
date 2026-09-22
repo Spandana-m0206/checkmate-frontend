@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    @apply min-h-full;
+  }
+
+  body {
+    @apply bg-base text-content;
+  }
+}

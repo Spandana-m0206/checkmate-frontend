@@ -62,20 +62,20 @@ export default function GameEndOverlay() {
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-xs rounded-xl bg-white p-6 text-center shadow-xl dark:bg-gray-800">
+    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70">
+      <div className="w-full max-w-xs rounded-lg border border-edge bg-surface p-6 text-center shadow-modal">
         <h2
           className={`text-2xl font-bold ${
             isDraw
-              ? "text-gray-700 dark:text-gray-300"
+              ? "text-content-muted"
               : iWon
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
+                ? "text-accent"
+                : "text-danger-hover"
           }`}
         >
           {title}
         </h2>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-content-muted">
           {subtitle}
         </p>
         <div className="mt-4 flex gap-3">

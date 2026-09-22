@@ -18,9 +18,9 @@ The frontend provides:
 - Authentication using email OTP
 - New-user profile setup
 - Home screen
-- Play with Random People
-- Invite Friend / Create Room
-- Join Room using room code
+- Play Online — matched with a random opponent
+- Play Bot — single-player against the server bot
+- Play with Friend — create a room, or join one by code
 - Real-time chess game
 - 30-second per-turn timer
 - Game result screen
@@ -95,21 +95,26 @@ New-user profile fields:
 The access token is stored by the frontend and attached to authenticated API
 requests and Socket.IO authentication.
 
+It is persisted to `localStorage`, so the session survives a page refresh. On
+boot the stored token is validated before any protected route renders — see
+[IMPLEMENTATION_PLAN.md §17](IMPLEMENTATION_PLAN.md).
+
 ### 2.3 Home
 
 **Route:** `/home`
 
 Actions:
 
-- Play Random
-- Invite Friend
-- History
+- Play Online
+- Play Bot
+- Play with Friend
+- Profile (where game history lives — §6)
 
 No player lobby or online-player list.
 
-### 2.4 Play Random
+### 2.4 Play Online
 
-User selects **Play Random**.
+User selects **Play Online**.
 
 The frontend connects to the authenticated Socket.IO connection and emits:
 
@@ -134,9 +139,10 @@ The frontend navigates both players to `/game/:gameId`.
 The `gameStarted` payload provides the initial game state required to render the
 board.
 
-### 2.5 Invite Friend
+### 2.5 Play with Friend
 
-User selects **Invite Friend**.
+User selects **Play with Friend**, which replaces the Home menu with the create
+/ join view.
 
 Screen provides:
 
@@ -175,6 +181,24 @@ joinRoom
 
 When the second player joins, both clients receive `gameStarted` and both
 navigate to `/game/:gameId`.
+
+### 2.6 Play Bot
+
+User selects **Play Bot**. The frontend emits:
+
+```
+startBotGame
+```
+
+The backend creates a single-player game against its bot user and replies with
+`gameStarted`, carrying `mode: "BOT"` and `botPlayerId`. There is no waiting
+state — nothing is being matched — so the player goes straight to
+`/game/:gameId`.
+
+Bot games are ordinary games in every other respect: the bot is a real user, its
+reply arrives as a second `moveMade`, and the move, timer, promotion, resign and
+reconnect rules in §3 apply unchanged. See
+[IMPLEMENTATION_PLAN.md §16](IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -228,9 +252,10 @@ Chess piece assets are **frontend-owned static assets**.
 
 ```
 src/assets/
+├── checkmate-logo.svg   app mark
 ├── board/
 │   ├── board.png        8×8 board image (#EBECD0 light / #739552 dark)
-│   └── background.png   page backdrop (#1F2C3D)
+│   └── background.png   navy backdrop — unused (see UI §3.1)
 └── pieces/
     ├── wk.png  wq.png  wr.png  wb.png  wn.png  wp.png
     └── bk.png  bq.png  br.png  bb.png  bn.png  bp.png
@@ -456,19 +481,45 @@ When connectivity is unavailable during an active game:
 
 ---
 
-## 6. History
+## 6. Profile & History
 
-**Route:** `/history`
+**Route:** `/profile`
 
-Display completed games for the authenticated player. Each item displays
-relevant game information such as:
+The profile page shows the authenticated player's account and, beneath it, their
+completed games. There is no separate history list route — `/history` redirects
+to `/profile`, so older links still resolve.
+
+### 6.1 Profile
+
+Displays, from the data the backend exposes on the user:
+
+- Profile image (or initials)
+- Username
+- Name
+- Joined date
+- Email and date of birth
+- Log out action
+
+The page is view-only; there is no profile editing (§17).
+
+### 6.2 Game history
+
+Displays completed games for the authenticated player, with a total count in the
+panel header. Each item displays relevant game information such as:
 
 - Opponent
 - Result
 - Date
 - Move count
 
-Selecting a game opens `/history/:gameId`.
+Selecting a game opens `/history/:gameId`, which remains its own route.
+
+When the player has no completed games, the panel shows an empty state rather
+than an empty list.
+
+### 6.3 Game detail
+
+**Route:** `/history/:gameId`
 
 Game details display:
 
@@ -886,7 +937,7 @@ Use reusable shared components for repeated UI patterns:
 
 ```jsx
 <Button variant="primary">
-    Play Random
+    Play Online
 </Button>
 ```
 
@@ -973,19 +1024,29 @@ The frontend does not communicate directly with Redis or MongoDB.
 
 ## 16. Current Repository State
 
-The repository is still a scaffold:
+The app is built and runs. Auth, home, matchmaking, game, history and profile
+all exist, `npm run build` passes, and the dark theme in
+[UI_SPECIFICATION.md §2](UI_SPECIFICATION.md) is implemented as Tailwind tokens.
 
-- Vite 6 + React 19 + TypeScript 5.8 + Tailwind CSS 3.4 are configured.
-- `src/App.tsx` is a placeholder rendering only the "Checkmate" heading.
-- None of the required dependencies in §14 are installed yet.
-- No `.env` file exists yet.
-- **Assets are done.** All 12 pieces were visually verified and renamed to the
-  §3.2 convention, the board and backdrop images were separated, and the
-  misspelled `src/assests/` directory was corrected to `src/assets/`. Nothing
-  imported from the old path, so no code changes were needed.
-- No `src/app/`, `src/features/`, `src/components/`, `src/hooks/`,
-  `src/services/`, `src/stores/` or `src/utils/` directories exist yet — the
-  structure in §11 is still to be built.
+**Assets are done.** All 12 pieces were visually verified and renamed to the
+§3.2 convention, the board and backdrop images were separated, the misspelled
+`src/assests/` directory was corrected, and `checkmate-logo.svg` was added.
+
+### 16.1 Known divergences from this document
+
+The code was written before parts of this spec and does not yet match it. These
+are recorded rather than silently fixed; each needs its own change.
+
+| This document says | The code does |
+| --- | --- |
+| `src/components/`, `src/features/`, `src/stores/` (§11) | `src/component/`, `src/feature/`, `src/store/` — all singular |
+| `src/app/App.tsx` + `routes.tsx` (§11) | `src/App.tsx` holds the router; no `app/` directory |
+| `apiClient.ts` → `useApiRequest` → `<f>.service.ts` → `use<F>Service` (§8) | `src/services/api.ts` exposes `apiFetch`; each feature has `service.ts`; pages call those directly from `useEffect`. `useApiRequest` and the feature service hooks do not exist |
+| No socket calls in UI components (§10, §4.1) | `HomePage`, `ChessBoard`, `ResignButton`, `QueueStatus`, `JoinRoomForm` and `GamePage` call `getSocket()?.emit(...)` inline |
+| Stores named `authStore`, `gameStore`, `connectionStore` (§7) | `useAuthStore`, `feature/game/store.ts`, `feature/matchmaking/store.ts`; no connection store |
+| Shared set incl. `IconButton`, `OtpInput`, `ErrorState`, `EmptyState`, `Card`, `AppShell` (§12) | Only `Button`, `Input`, `Modal`, `Spinner`, `Avatar` |
+| Welcome screen at `/` (§2.1) | No `/` route; unmatched paths redirect to `/auth` |
+| 4-layer board incl. coordinates (§3.1, UI §5.5.4) | Board image + interaction grid only; no coordinate layer |
 
 ---
 
@@ -997,12 +1058,9 @@ the code that depends on them is written.
 1. **Backend contract.** The exact payload shapes for `gameStarted`, `moveMade`,
    `gameState`, `gameEnded`, and the REST responses for `GET /games` and
    `GET /games/:gameId` are defined by the backend and must be confirmed against
-   it rather than guessed. This also covers the room-code length and character
-   set (§2.5).
-2. **Token storage mechanism.** §2.2 requires the access token to be stored, but
-   does not specify where (`localStorage`, `sessionStorage`, or in-memory with a
-   refresh flow).
-3. **Profile image upload.** §2.2 lists a profile image field but does not
+   it rather than guessed. (The room code is settled: six alphanumeric
+   characters, per `JoinRoomForm`.)
+2. **Profile image upload.** §2.2 lists a profile image field but does not
    specify the upload endpoint or transport (multipart vs. base64 vs. presigned
    URL).
 
@@ -1020,3 +1078,7 @@ the code that depends on them is written.
   `chess.js` piece encoding (§3.2).
 - **API layer naming.** `apiClient` → `useApiRequest` → `<feature>.service.ts`
   → `use<Feature>Service` (§8).
+- **Token storage.** The access token is persisted to `localStorage` (key
+  `checkmate-auth`), satisfying §2.2. Only the token is stored; the user is
+  re-fetched via `GET /users/me` on every boot, which also validates the token.
+  See [IMPLEMENTATION_PLAN.md §17](IMPLEMENTATION_PLAN.md).

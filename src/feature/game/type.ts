@@ -1,6 +1,7 @@
 export type GameStatus = "ACTIVE" | "COMPLETED" | "ABANDONED";
 export type GameResult = "CHECKMATE" | "RESIGNATION" | "TIMEOUT" | "DRAW";
 export type PieceColor = "white" | "black";
+export type GameMode = "MULTIPLAYER" | "BOT";
 
 export interface MoveNotation {
   notation: string;
@@ -16,6 +17,9 @@ export interface GameStartedPayload {
   fen: string;
   yourColor: PieceColor;
   turnStartedAt: number;
+  // Bot games only — absent means MULTIPLAYER.
+  mode?: GameMode;
+  botPlayerId?: string;
 }
 
 export interface MoveMadePayload {
@@ -43,6 +47,9 @@ export interface GameEndedPayload {
   status: GameStatus;
   result: GameResult;
   winnerId: string;
+  // Bot games only.
+  isBotGame?: boolean;
+  botPlayerId?: string;
 }
 
 export interface GameStatePayload {

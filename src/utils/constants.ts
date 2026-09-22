@@ -4,3 +4,6 @@ export const API_BASE_URL =
 export const TURN_TIMEOUT_MS = Number(
   import.meta.env.VITE_TURN_TIMEOUT_MS || 30000,
 );
+
+// Matches the backend's bot user, so the game screen and history agree.
+export const BOT_NAME = "Checkmate Bot";

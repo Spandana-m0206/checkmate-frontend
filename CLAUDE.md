@@ -12,6 +12,7 @@ read [UI_SPECIFICATION.md](UI_SPECIFICATION.md).**
 | --- | --- | --- |
 | `REQUIREMENTS.md` | **What** it does — routes, flows, socket events, state, API architecture, folder structure | Wins on any conflict |
 | `UI_SPECIFICATION.md` | **How** it looks and behaves — tokens, layout, screens, board anatomy, interaction, a11y | Subordinate to REQUIREMENTS.md |
+| `IMPLEMENTATION_PLAN.md` | **How it was built** — structure, backend contract reference, per-feature plans | Reference; parts are superseded and marked so |
 
 This applies to every implementation task, including small ones — a "quick"
 component still has to sit in the right folder, consume the right hook, use the
@@ -67,6 +68,12 @@ These are the rules most easily broken by accident. All of them are derived from
   §4.1).
 - **One socket connection per authenticated session.** It is not recreated on
   render (§4.1).
+- **Bot games differ only in labelling.** `startBotGame` produces an ordinary
+  game: the bot is a real user, its move arrives as a second `moveMade`, and
+  move/timer/promotion/resign/reconnect logic is shared with multiplayer. Never
+  branch those paths on game mode. The bot fields (`mode`, `botPlayerId`,
+  `isBotGame`) are **optional** — absent means `MULTIPLAYER`
+  ([IMPLEMENTATION_PLAN.md §16](IMPLEMENTATION_PLAN.md)).
 - **No hardcoded backend URLs.** The base URL comes from `VITE_API_BASE_URL` in
   `.env`; feature services define paths only (§8.1).
 - **Feature-based structure.** Game-specific components live in

@@ -27,8 +27,8 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg dark:bg-gray-800">
+    <div className="flex min-h-screen items-center justify-center bg-base px-4">
+      <div className="w-full max-w-sm rounded-lg border border-edge bg-surface p-6 shadow-raised">
         {stage === "send-otp" && <OtpSendForm onSuccess={handleOtpSent} />}
 
         {stage === "verify-otp" && (

@@ -40,14 +40,25 @@ export function isLightSquare(square: string): boolean {
   return (file + rank) % 2 !== 0;
 }
 
-/**
- * Maps chess.js piece {type, color} to a Unicode chess symbol.
- */
-const PIECE_SYMBOLS: Record<string, Record<string, string>> = {
-  w: { k: "\u2654", q: "\u2655", r: "\u2656", b: "\u2657", n: "\u2658", p: "\u2659" },
-  b: { k: "\u265A", q: "\u265B", r: "\u265C", b: "\u265D", n: "\u265E", p: "\u265F" },
+// --- Piece image imports ---
+import wp from "../assets/pieces/wp.png";
+import wn from "../assets/pieces/wn.png";
+import wb from "../assets/pieces/wb.png";
+import wr from "../assets/pieces/wr.png";
+import wq from "../assets/pieces/wq.png";
+import wk from "../assets/pieces/wk.png";
+import bp from "../assets/pieces/bp.png";
+import bn from "../assets/pieces/bn.png";
+import bb from "../assets/pieces/bb.png";
+import br from "../assets/pieces/br.png";
+import bq from "../assets/pieces/bq.png";
+import bk from "../assets/pieces/bk.png";
+
+const PIECE_IMAGES: Record<string, Record<string, string>> = {
+  w: { k: wk, q: wq, r: wr, b: wb, n: wn, p: wp },
+  b: { k: bk, q: bq, r: br, b: bb, n: bn, p: bp },
 };
 
-export function getPieceSymbol(color: string, type: string): string {
-  return PIECE_SYMBOLS[color]?.[type] ?? "";
+export function getPieceImage(color: string, type: string): string {
+  return PIECE_IMAGES[color]?.[type] ?? "";
 }

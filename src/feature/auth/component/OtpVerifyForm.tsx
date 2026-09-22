@@ -54,12 +54,12 @@ export default function OtpVerifyForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-bold text-content">
           Verify OTP
         </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-content-muted">
           We sent a 4-digit code to{" "}
-          <span className="font-medium text-gray-900 dark:text-gray-100">
+          <span className="font-medium text-content">
             {email}
           </span>
         </p>
@@ -87,7 +87,7 @@ export default function OtpVerifyForm({
       <button
         type="button"
         onClick={onBack}
-        className="w-full text-center text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+        className="w-full text-center text-sm text-content-muted transition-colors hover:text-content"
       >
         Use a different email
       </button>

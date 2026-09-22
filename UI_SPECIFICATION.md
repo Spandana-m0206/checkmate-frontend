@@ -12,9 +12,14 @@ section below cross-references the requirement it renders — e.g. "(REQ §3.5)"
 
 ## 1. Reference & Scope
 
-**Reference:** `https://www.chess.com/play/computer` — dark shell, slim left nav,
-centred board flanked by opponent/player strips, right-hand panel holding the
-move list and game controls.
+**Reference:** chess.com's dark theme — its home screen (the supplied
+screenshot) for the shell, panels, buttons and palette, and `/play/computer` for
+the game screen's board, player strips and move-list panel.
+
+Checkmate is a deliberately minimal version of that game, so the spec takes the
+reference's *visual language* — surfaces, the green raised primary button, panel
+composition — and applies it only to the features Checkmate actually has. It
+does not reproduce the reference's density or its feature surface (§1.3).
 
 ### 1.1 Decisions governing this spec
 
@@ -37,15 +42,27 @@ from the authoritative FEN and the moves already received over the socket:
 - Flip-board control
 - Last-move highlight, selected-square highlight, check highlight
 
+Play-vs-Bot is also in scope, backed by the `startBotGame` socket event
+(§5.3, §5.5.1, §5.6).
+
 ### 1.3 Out of scope
 
 These chess.com features are **not** part of Checkmate and must not appear in
-the UI: bot/opponent selection, Elo ratings and rating change, hints, takebacks,
-move evaluation and analysis, game review, board/piece theme pickers, draw
-offers, premoves, chat, puzzles, and the marketing/global site navigation.
+the UI: Elo ratings and rating change, hints, takebacks, move evaluation and
+analysis, game review, board/piece theme pickers, draw offers, premoves, chat,
+puzzles, and the marketing/global site navigation.
+
+Also out of scope for the bot specifically: **difficulty levels, bot
+personalities/avatars, and colour choice.** The backend plays a uniformly random
+legal move and assigns colours randomly, so there is nothing for such a UI to
+control.
 
 Any of these that are later requested must first be added to
 `REQUIREMENTS.md` — they imply backend support this frontend does not have.
+
+> **Changed.** Bot/opponent selection was previously listed here as out of
+> scope. Play-vs-Bot is now a supported feature — see §5.3, §5.5.1 and
+> [IMPLEMENTATION_PLAN.md §16](IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -56,51 +73,61 @@ Tailwind utilities. Components must use tokens, never raw hex values (REQ §13).
 
 ### 2.1 Colour
 
-Board colours are sampled from `src/assets/board/board.png`; the surface ramp is
-built from `src/assets/board/background.png` so the shell and the backdrop
-agree.
+**Dark only.** There is no light palette, no `dark:` variant and no theme
+toggle. Surfaces are sampled from the chess.com reference screenshot; board
+colours from `src/assets/board/board.png`.
+
+These are the token names as implemented in `tailwind.config.js`, so the class
+names below are the real ones.
 
 **Surfaces**
 
-| Token | Hex | Use |
-| --- | --- | --- |
-| `bg-base` | `#1F2C3D` | Page background, behind the backdrop image |
-| `surface` | `#26334A` | Panels, cards, left nav |
-| `surface-raised` | `#2C3A54` | Player strips, move-list header, hover rows |
-| `surface-sunken` | `#1A2536` | Move-list body, inputs |
-| `border` | `#3A4A66` | Hairlines, dividers, input borders |
-| `border-strong` | `#4A5C7A` | Focused input, active tab |
+| Token | Class | Hex | Use |
+| --- | --- | --- | --- |
+| `base` | `bg-base` | `#302E2B` | Page background |
+| `surface` | `bg-surface` | `#262522` | Panels, cards, top bar, player strips |
+| `surface-raised` | `bg-surface-raised` | `#383734` | Secondary buttons, hover rows |
+| `surface-sunken` | `bg-surface-sunken` | `#21201D` | Inputs, move list, field rows |
+| `edge` | `border-edge` | `#3E3D3A` | Hairlines, dividers, input borders |
+| `edge-strong` | `border-edge-strong` | `#4E4D49` | Emphasised borders |
 
 **Text**
 
-| Token | Hex | Use |
-| --- | --- | --- |
-| `text-primary` | `#EDEFF3` | Headings, player names, move text |
-| `text-secondary` | `#9AA6BC` | Labels, metadata, timestamps |
-| `text-muted` | `#6B7893` | Disabled, placeholder, board coordinates |
+| Token | Class | Hex | Use |
+| --- | --- | --- | --- |
+| `content` | `text-content` | `#FFFFFF` | Headings, player names, move text |
+| `content-muted` | `text-content-muted` | `#B4B2AE` | Labels, secondary copy |
+| `content-subtle` | `text-content-subtle` | `#8B8987` | Metadata, placeholder, coordinates |
 
 **Accent & status**
 
-| Token | Hex | Use |
-| --- | --- | --- |
-| `accent` | `#81B64C` | Primary actions, active turn indicator |
-| `accent-hover` | `#9BCB63` | Primary hover |
-| `accent-pressed` | `#6B9A3F` | Primary active |
-| `danger` | `#CC3333` | Resign, destructive confirms, errors |
-| `danger-hover` | `#E04A4A` | Danger hover |
-| `warning` | `#E8A33D` | Timer ≤ 10s, reconnecting banner |
-| `info` | `#4A90D9` | Neutral notices, room-code panel |
+| Token | Class | Hex | Use |
+| --- | --- | --- | --- |
+| `accent` | `bg-accent` | `#81B64C` | Primary actions, active turn — the logo's own green |
+| `accent-hover` | `bg-accent-hover` | `#A3D160` | Primary hover |
+| `accent-pressed` | `border-accent-pressed` | `#5D9948` | Primary raised edge and active state |
+| `accent-ink` | `text-accent-ink` | `#1B2E0C` | Text on an accent fill |
+| `danger` | `bg-danger` | `#CA3431` | Resign, destructive confirms, errors |
+| `danger-hover` | `text-danger-hover` | `#E04A4A` | Danger hover, error text |
+| `warning` | `text-warning` | `#E8A33D` | Timer ≤ 10s, disconnect banner |
+| `info` | `text-info` | `#4A90D9` | Neutral notices |
 
 **Board**
 
-| Token | Hex / value | Use |
-| --- | --- | --- |
-| `board-light` | `#EBECD0` | Light squares (from `board.png`) |
-| `board-dark` | `#739552` | Dark squares (from `board.png`) |
-| `board-highlight` | `rgba(255, 241, 120, 0.55)` | Selected square, last-move from/to |
-| `board-legal` | `rgba(20, 30, 20, 0.22)` | Legal-move dot and capture ring |
-| `board-check` | `radial-gradient(circle, #E5453B 0%, rgba(229,69,59,0) 72%)` | King in check |
-| `board-pending` | `rgba(255, 241, 120, 0.28)` | Square of a move awaiting confirmation |
+| Token | Class | Value | Use |
+| --- | --- | --- | --- |
+| `board-light` | `bg-board-light` | `#EBECD0` | Light squares (from `board.png`) |
+| `board-dark` | `bg-board-dark` | `#739552` | Dark squares (from `board.png`) |
+| `board-highlight` | `bg-board-highlight` | `rgba(255, 241, 120, 0.55)` | Selected square |
+| `board-highlight-soft` | `bg-board-highlight-soft` | `rgba(255, 241, 120, 0.35)` | Last-move from/to |
+| `board-check` | `bg-board-check` | `rgba(229, 69, 59, 0.55)` | King in check |
+
+Legal-move dots and capture rings are drawn in `black/25` directly over the
+board image, since they must read against both square colours.
+
+**Raised buttons.** chess.com's buttons sit on a 3px darker bottom edge that
+collapses when pressed. `Button` reproduces this with
+`border-b-[3px]` plus `active:border-b-0 active:mt-[3px]`.
 
 ### 2.2 Typography
 
@@ -143,9 +170,10 @@ font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace
 
 ### 3.1 Backdrop
 
-`src/assets/board/background.png` is fixed to the viewport, `cover`, centred,
-with a `bg-base` colour beneath it and a `rgba(31,44,61,0.72)` scrim on top so
-foreground text keeps contrast. It never scrolls with content.
+Flat `bg-base` (`#302E2B`), matching the reference, which uses a solid page
+colour rather than an image. No backdrop image is used;
+`src/assets/board/background.png` is dark navy and would fight the warm-grey
+palette, so it is currently unreferenced.
 
 ### 3.2 Breakpoints
 
@@ -159,8 +187,9 @@ foreground text keeps contrast. It never scrolls with content.
 ### 3.3 Left nav (`lg` and up)
 
 A `72px` fixed rail on `surface`, holding the Checkmate mark at top and
-icon+label buttons: **Home** (`/home`), **Play** (`/home` → Play Random),
-**History** (`/history`), and the user avatar at the bottom.
+icon+label buttons: **Home** (`/home`), **Play** (`/home` → Play Online),
+**Profile** (`/profile`, which holds game history), and the user avatar at the
+bottom.
 
 Active item: `accent` icon with a 3px `accent` left edge. Inactive:
 `text-secondary`, hover `text-primary` on `surface-raised`.
@@ -324,35 +353,87 @@ redirects straight to `/home` (REQ §2.2).
 
 ### 5.3 Home — `/home` (REQ §2.3)
 
-Three stacked action cards in a centred `560px` column. No lobby and no
-online-player list (REQ §2.3).
+A single action panel on `surface`, with a board image beside it at `md` and up.
+No lobby and no online-player list (REQ §2.3).
+
+Following the reference, one `accent` primary action sits above a list of
+uniform dark menu rows:
 
 ```
-┌────────────────────────────────────────┐
-│  Welcome back, {name}                  │  H1
-│                                        │
-│  ┌──────────────────────────────────┐  │
-│  │ ♟  Play Random                   │  │  Card interactive
-│  │    Get matched with a player  ▸  │  │
-│  └──────────────────────────────────┘  │
-│  ┌──────────────────────────────────┐  │
-│  │ ✉  Invite Friend                 │  │
-│  │    Create or join a room      ▸  │  │
-│  └──────────────────────────────────┘  │
-│  ┌──────────────────────────────────┐  │
-│  │ ⏱  History                       │  │
-│  │    Your completed games       ▸  │  │
-│  └──────────────────────────────────┘  │
-└────────────────────────────────────────┘
+┌──────────────────────────┐  ┌──────────────┐
+│  Play Chess              │  │              │
+│  30 seconds per move     │  │  board image │
+│                          │  │              │
+│  ┌────────────────────┐  │  │   (md+ only) │
+│  │    Play Online     │  │  │              │
+│  └────────────────────┘  │  └──────────────┘
+│  ┌────────────────────┐  │
+│  │ 🤖  Play Bot       │  │  MenuButton
+│  ├────────────────────┤  │
+│  │ 🤝  Play with…     │  │  MenuButton
+│  ├────────────────────┤  │
+│  │ 👤  Profile        │  │  MenuButton (link)
+│  └────────────────────┘  │
+└──────────────────────────┘
 ```
 
-**Play Random** is visually primary — `accent` left border and an `accent`
--tinted icon disc. The other two are neutral.
+| Action | Control | Behaviour |
+| --- | --- | --- |
+| Play Online | `Button` `primary` | Emits `joinQueue` |
+| Play Bot | `MenuButton` | Emits `startBotGame` (§5.3.1) |
+| Play with Friend | `MenuButton` | Swaps the panel to the friend view (§5.4) |
+| Profile | `MenuButton` link | Navigates to `/profile`, where history lives (§5.6) |
+
+**MenuButton** is a full-width `surface-raised` row — `radius-md`, `12px 16px`
+padding, an icon then a bold left-aligned label, hover `edge-strong`. It renders
+an anchor when given a `to` and a button otherwise, so Profile stays a real
+link. The class string lives in the component, not at each call site.
+
+#### 5.3.1 Play Bot
+
+**Play Bot** emits `startBotGame` and needs no options — the backend assigns
+colour randomly and exposes no difficulty levels (§1.3).
+
+The player goes straight to `/game/:gameId` on `gameStarted`; there is no
+waiting state, because nothing is being matched.
+
+#### 5.3.2 Action errors
+
+The server rejects some actions over the socket `error` event — notably
+`You are already in an active game` for `startBotGame`. Home renders the message
+as a single `text-danger-hover` line beneath the action buttons.
+
+Every Home action clears the message before emitting, so a stale error never
+outlives the next attempt. This is a deliberately narrow stand-in for the toast
+system in §6, which is still unbuilt.
 
 ### 5.4 Matchmaking (REQ §2.4, §2.5)
 
-Rendered as a `Modal` over `/home` rather than as its own route, so dismissing
-returns the player to Home.
+Matchmaking has no route of its own. Each state **replaces the panel content**
+in place, so the player never leaves `/home` and there is no Modal to dismiss.
+
+**Play with Friend** — selecting it swaps the menu for the friend view, headed
+by a back control (`← Play with Friend`) that returns to the menu:
+
+```
+┌──────────────────────────┐
+│  ← Play with Friend      │  back to menu
+│                          │
+│  ┌────────────────────┐  │
+│  │    Create Room     │  │  Button primary → createRoom
+│  └────────────────────┘  │
+│  ──────── OR ─────────   │
+│  ┌──────────┐ ┌───────┐  │
+│  │ ROOM CODE│ │ Join  │  │  JoinRoomForm → joinRoom
+│  └──────────┘ └───────┘  │
+└──────────────────────────┘
+```
+
+Create and Join live together here because they are two ways to do one thing —
+play a specific person — and keeping them off the main menu leaves it to the
+three ways of *starting* a game.
+
+Switching views clears any pending action error (§5.3.2).
 
 **Searching** (after `joinQueue`)
 
@@ -367,35 +448,21 @@ returns the player to Home.
 └──────────────────────────────┘
 ```
 
-The modal is non-dismissable except through **Cancel**, so the player cannot
-abandon the queue without `leaveQueue` being emitted (REQ §4).
+**Cancel** is the only way out of the queue, so the player cannot abandon it
+without `leaveQueue` being emitted (REQ §4).
 
-**Invite Friend** — two stacked blocks separated by an `OR` divider:
+**Room created** — replaces the panel with the code in `font-mono`,
+letter-spaced, on a `surface-sunken` field, a **Copy code** button, and
+`Waiting for opponent to join...` with a spinner. Copy confirms with a transient
+check icon. A **Cancel** button opens a confirmation modal: *"Are you sure you
+want to leave the room?"* with `Cancel` (close modal) and `Leave` (`danger`
+variant, emits `cancelRoom`). This follows the same confirm-before-destructive
+pattern as the resign modal (§5.5.11).
 
-```
-┌──────────────────────────────┐
-│  Invite a friend             │  H2
-│  ┌────────────────────────┐  │
-│  │     Create Room        │  │  Button primary
-│  └────────────────────────┘  │
-│  ──────────  OR  ──────────  │
-│  Enter room code             │  Small label
-│  ┌────────────────────────┐  │
-│  │  [_ _ _ _ _ _]         │  │  OtpInput-style, uppercase
-│  └────────────────────────┘  │
-│  ┌────────────────────────┐  │
-│  │         Join           │  │  Button secondary
-│  └────────────────────────┘  │
-└──────────────────────────────┘
-```
+On `gameStarted` both clients navigate to `/game/:gameId` (REQ §2.4, §2.5).
 
-**Room created** — replaces the modal body with the code rendered at `40px`
-`font-mono`, letter-spaced, on an `info`-tinted panel, a **Copy code**
-`IconButton`, and `Waiting for your friend to join...` with a spinner. Copy
-confirms with a transient `Copied` pill.
-
-On `gameStarted` the modal closes and both clients navigate to `/game/:gameId`
-(REQ §2.4, §2.5).
+The room code is six alphanumeric characters; `JoinRoomForm` upper-cases input,
+strips anything else, and keeps **Join** disabled until exactly six are entered.
 
 ### 5.5 Game — `/game/:gameId` (REQ §3)
 
@@ -437,6 +504,16 @@ the captured-piece tray, then the clock pushed right.
 
 **Active turn** — the strip whose turn it is gets a `2px accent` border and its
 clock switches to `text-primary`; the idle strip's clock is `text-muted`.
+
+**Bot games** — when the opponent's id equals `botPlayerId` from `gameStarted`,
+the opponent strip is labelled **"Checkmate Bot"** rather than the id-derived
+placeholder used for human opponents. The name is a frontend constant matching
+the backend's bot user, so the game screen and the history list agree on it.
+
+Nothing else on the game screen changes for a bot game. The bot replies inside
+the same server lock as the player's move, so its move simply arrives as a
+second `moveMade`; and because the bot holds no socket, the
+`opponentDisconnected` banner never appears.
 
 #### 5.5.2 Captured pieces (client-derived, §1.2)
 
@@ -631,38 +708,71 @@ opens over a board that stays visible behind the overlay:
 
 The reason line reads `by checkmate`, `by stalemate`, `by resignation`, or
 `on time`, covering the four end states in REQ §3.8. Both buttons are always
-offered — `Home` (`/home`) and `History` (`/history`) — per REQ §3.8.
+offered — `Home` (`/home`) and `View Game` (`/history/:gameId`) — per REQ §3.8.
 
-### 5.6 History — `/history` (REQ §6)
+### 5.6 Profile & History — `/profile` (REQ §6)
 
-A centred `720px` column of rows, newest first.
+Modelled on the chess.com member page: an identity header, then stacked content
+panels beneath it. A centred `720px` column. `/history` redirects here.
 
 ```
 ┌──────────────────────────────────────────────┐
-│  History                                     │  H1
+│  ╭──────╮  username                 [Log Out]│  H1 = username
+│  │      │  Name                             │
+│  │  AV  │  Joined 3 Oct 2020                │  Small, content-subtle
+│  ╰──────╯  you@example.com · Born 12 Mar 98 │
+├──────────────────────────────────────────────┤
+│  Game History (12)                           │  panel header
+├──────────────────────────────────────────────┤
 │  ┌────────────────────────────────────────┐  │
-│  │ ▌ ◍ opponent_name          Won     ▸  │  │  accent left edge
-│  │     22 Sep 2026 · 34 moves             │  │
+│  │ ◍ opponent_name            Won      ▸ │  │
+│  │   22 Sep 2026 · 34 moves               │  │
 │  └────────────────────────────────────────┘  │
 │  ┌────────────────────────────────────────┐  │
-│  │ ▌ ◍ other_player           Lost    ▸  │  │  danger left edge
-│  │     21 Sep 2026 · 51 moves             │  │
+│  │ ◍ Checkmate Bot  BOT       Lost     ▸ │  │
+│  │   21 Sep 2026 · 51 moves               │  │
 │  └────────────────────────────────────────┘  │
+│                [ Load More ]                 │
 └──────────────────────────────────────────────┘
 ```
+
+**Header** — `Avatar` at `xl` (96px) on the left, then username as `H1`, name in
+`content-muted`, and two `Small` `content-subtle` lines: joined date, then email
+and date of birth. **Log Out** is a `secondary` Button pushed right, dropping
+below the identity block under `sm`.
+
+The reference's flair, status, friend/view counts, online badge, tab row, Daily
+Games panel and right-hand sidebar are all omitted: the backend exposes no data
+behind any of them (§1.3). The avatar stays circular rather than the reference's
+square, to match every other avatar in the app.
+
+**Game History panel** — a bordered `surface` section with its own header bar
+carrying the title and the total count from `pagination.total`, mirroring the
+reference's `Game History (0)`. Rows sit in the panel body, newest first, with
+**Load More** beneath when more pages remain.
 
 Each row is an interactive `Card` carrying opponent, result, date and move count
 (REQ §6), with a 3px left edge coloured by result — `accent` won, `danger` lost,
 `info` drawn. Selecting a row opens `/history/:gameId` (REQ §6).
 
-States: `Loader` while fetching, `ErrorState` with retry on failure, and an
-`EmptyState` reading `No games yet` with a **Play Random** action when the list
-is empty.
+**Bot games** carry a small uppercase `BOT` badge beside the opponent name —
+`surface-raised` fill, `content-subtle` text, `Caption` type — shown when
+`game.mode === "BOT"`. The same badge appears in the `/history/:gameId` summary
+header. Without it a bot game is indistinguishable from a human opponent who
+happens to be named Checkmate Bot, since the backend populates the bot's real
+user document as the opponent.
+
+**States** — a centred `Loader` while fetching, a `danger` line on failure, and
+when the player has no completed games, an empty state matching the reference: a
+small dimmed board image, `No Game History` in `content`, and
+`Completed games will appear here` in `content-subtle`.
 
 ### 5.7 Game detail — `/history/:gameId` (REQ §6)
 
 Two columns at `lg`: a static board on the left, the full move list on the
 right. Below `lg` they stack.
+
+Back navigation returns to `/profile`, since that is where the list now lives.
 
 A header names both players and the result. The move list here **is**
 interactive, since the whole move sequence is available from
@@ -719,13 +829,17 @@ Assets live in `src/assets/` and are frontend-owned (REQ §3.2).
 
 ```
 src/assets/
+├── checkmate-logo.svg   app mark — top bar and sign-in card
 ├── board/
 │   ├── board.png        1600×1600  8×8 board, #EBECD0 / #739552
-│   └── background.png   2048×2048  dark navy backdrop, #1F2C3D
+│   └── background.png   2048×2048  navy backdrop — currently unused (§3.1)
 └── pieces/
     ├── wk.png  wq.png  wr.png  wb.png  wn.png  wp.png
     └── bk.png  bq.png  br.png  bb.png  bn.png  bp.png
 ```
+
+The logo is referenced from exactly two places — `TopBar` and `OtpSendForm` —
+so replacing it is a one-file swap.
 
 Piece filenames follow `{color}{type}.png` with `color ∈ {w, b}` and
 `type ∈ {k, q, r, b, n, p}` — the same encoding `chess.js` uses for a piece, so
@@ -766,11 +880,18 @@ the lookup is a direct template with no mapping table.
 
 ## 10. Open UI Questions
 
-1. **Welcome mark** — the wordmark currently reuses `bn.png`. A dedicated logo
-   asset would be better if one exists.
-2. **Avatar fallback** — initials are specified, but the profile-image upload
-   transport is itself unresolved (REQ §17.4), so the URL shape is unknown.
-3. **Toast library vs. in-house** — §6 specifies behaviour but not
+1. **Avatar fallback** — initials are specified, but the profile-image upload
+   transport is itself unresolved (REQ §17.3), so the URL shape is unknown.
+2. **Toast library vs. in-house** — §6 specifies behaviour but not
    implementation; a small in-house component is assumed.
-4. **Room-code length** — §5.4 draws six cells. The real length is set by the
-   backend and must be confirmed (REQ §17.2).
+3. **Logo provenance** — `checkmate-logo.svg` as supplied is the chess.com mark
+   (its `<title>` says so). Fine for a private build, but it cannot ship
+   publicly under Checkmate's own branding and should be replaced with an
+   original mark before any public release.
+
+### Resolved
+
+- **Logo asset** — supplied as `src/assets/checkmate-logo.svg` and now used in
+  the top bar and on the sign-in card.
+- **Room-code length** — six alphanumeric characters, confirmed against
+  `JoinRoomForm`, which validates exactly that.

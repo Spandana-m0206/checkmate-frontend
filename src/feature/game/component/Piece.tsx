@@ -1,17 +1,17 @@
-import { getPieceSymbol } from "../../../utils/chess";
+import { getPieceImage } from "../../../utils/chess";
 
 interface PieceProps {
-  color: string;
-  type: string;
+  color: string; // "w" | "b"
+  type: string; // "k" | "q" | "r" | "b" | "n" | "p"
 }
 
 export default function Piece({ color, type }: PieceProps) {
   return (
-    <span
-      className="pointer-events-none select-none text-[min(5vw,2.5rem)] leading-none drop-shadow-sm sm:text-[min(4vw,3rem)] lg:text-4xl"
-      aria-label={`${color === "w" ? "White" : "Black"} ${type}`}
-    >
-      {getPieceSymbol(color, type)}
-    </span>
+    <img
+      src={getPieceImage(color, type)}
+      alt={`${color === "w" ? "White" : "Black"} ${type}`}
+      className="pointer-events-none h-[80%] w-[80%] select-none drop-shadow-md"
+      draggable={false}
+    />
   );
 }

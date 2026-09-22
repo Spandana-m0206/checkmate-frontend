@@ -5,8 +5,11 @@ import AppLayout from "./component/layout/AppLayout";
 import AuthPage from "./feature/auth";
 import HomePage from "./feature/home";
 import GamePage from "./feature/game";
-import { HistoryPage, HistoryDetailPage } from "./feature/history";
+import { HistoryDetailPage } from "./feature/history";
 import ProfilePage from "./feature/profile";
+import Spinner from "./component/ui/Spinner";
+import { useAuthBootstrap } from "./hooks/useAuthBootstrap";
+import { useAuthStore } from "./store/useAuthStore";
 
 const router = createBrowserRouter([
   {
@@ -21,7 +24,9 @@ const router = createBrowserRouter([
         children: [
           { path: "/home", element: <HomePage /> },
           { path: "/game/:gameId", element: <GamePage /> },
-          { path: "/history", element: <HistoryPage /> },
+          // Game history lives on the profile page; the old list route is
+          // kept as a redirect so existing links still resolve.
+          { path: "/history", element: <Navigate to="/profile" replace /> },
           { path: "/history/:gameId", element: <HistoryDetailPage /> },
           { path: "/profile", element: <ProfilePage /> },
         ],
@@ -35,5 +40,19 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
+  const status = useAuthStore((s) => s.status);
+
+  useAuthBootstrap();
+
+  // Hold the router back until the persisted session resolves, so the guards
+  // never see a half-restored session and bounce the user to /auth.
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-base">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
   return <RouterProvider router={router} />;
 }

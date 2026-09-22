@@ -11,10 +11,10 @@ export default function TurnTimer({ seconds, isActive }: TurnTimerProps) {
     <div
       className={`rounded-lg px-3 py-1 font-mono text-lg font-bold ${
         !isActive
-          ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+          ? "bg-surface-sunken text-content-subtle"
           : urgent
-            ? "animate-pulse bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
-            : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+            ? "animate-pulse bg-danger/20 text-danger-hover"
+            : "bg-surface-sunken text-content"
       }`}
     >
       {display}

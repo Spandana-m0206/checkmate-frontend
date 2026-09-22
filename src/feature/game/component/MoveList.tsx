@@ -29,7 +29,7 @@ export default function MoveList({ moves }: MoveListProps) {
 
   if (pairs.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+      <div className="flex h-full items-center justify-center text-sm text-content-subtle">
         No moves yet
       </div>
     );
@@ -40,15 +40,15 @@ export default function MoveList({ moves }: MoveListProps) {
       {pairs.map((pair) => (
         <div
           key={pair.num}
-          className="flex gap-1 border-b border-gray-100 py-1 dark:border-gray-700/50"
+          className="flex gap-1 border-b border-edge/60 py-1"
         >
-          <span className="w-8 text-right text-gray-400 dark:text-gray-500">
+          <span className="w-8 text-right font-mono text-content-subtle">
             {pair.num}.
           </span>
-          <span className="w-16 font-medium text-gray-900 dark:text-gray-100">
+          <span className="w-16 font-mono font-medium text-content">
             {pair.white}
           </span>
-          <span className="w-16 font-medium text-gray-900 dark:text-gray-100">
+          <span className="w-16 font-mono font-medium text-content">
             {pair.black ?? ""}
           </span>
         </div>

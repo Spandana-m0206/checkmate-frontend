@@ -29,17 +29,17 @@ export default function MoveTable({ moves, whitePlayerId }: MoveTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="overflow-hidden rounded-lg border border-edge">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 dark:bg-gray-800">
-            <th className="w-12 px-3 py-2 text-left text-gray-500 dark:text-gray-400">
+          <tr className="bg-surface">
+            <th className="w-12 px-3 py-2 text-left font-semibold text-content-subtle">
               #
             </th>
-            <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">
+            <th className="px-3 py-2 text-left font-semibold text-content-subtle">
               White
             </th>
-            <th className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">
+            <th className="px-3 py-2 text-left font-semibold text-content-subtle">
               Black
             </th>
           </tr>
@@ -48,15 +48,15 @@ export default function MoveTable({ moves, whitePlayerId }: MoveTableProps) {
           {pairs.map((pair) => (
             <tr
               key={pair.num}
-              className="border-t border-gray-100 dark:border-gray-700/50"
+              className="border-t border-edge/60 bg-surface-sunken"
             >
-              <td className="px-3 py-1.5 text-gray-400 dark:text-gray-500">
+              <td className="px-3 py-1.5 font-mono text-content-subtle">
                 {pair.num}
               </td>
-              <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-gray-100">
+              <td className="px-3 py-1.5 font-mono font-medium text-content">
                 {pair.white ?? ""}
               </td>
-              <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-gray-100">
+              <td className="px-3 py-1.5 font-mono font-medium text-content">
                 {pair.black ?? ""}
               </td>
             </tr>

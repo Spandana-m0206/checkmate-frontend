@@ -18,10 +18,12 @@
 9. [Authentication Flow](#9-authentication-flow)
 10. [Matchmaking Flow](#10-matchmaking-flow)
 11. [Game Flow](#11-game-flow)
-12. [Game History Flow](#12-game-history-flow)
-13. [Dark Mode](#13-dark-mode)
+12. [Profile & History Flow](#12-game-history-flow)
+13. [Theme](#13-theme)
 14. [Responsive Design](#14-responsive-design)
 15. [Phased Build Order](#15-phased-build-order)
+16. [Play Against Bot](#16-play-against-bot)
+17. [Session Persistence](#17-session-persistence)
 
 ---
 
@@ -31,11 +33,11 @@
 |---|----------|
 | 1 | Custom chess board built with `chess.js` — no `react-chessboard`. Board uses a custom image/design with an 8×8 transparent interaction grid on top. |
 | 2 | Fully custom Tailwind components — no shadcn/ui, Radix, or other component libraries. |
-| 3 | Dark mode required using Tailwind `dark:` classes with a simple theme toggle. |
+| 3 | ~~Dark mode with a theme toggle.~~ **Superseded:** dark theme only, no light palette and no toggle. Colours are Tailwind tokens — see [UI_SPECIFICATION.md §2](UI_SPECIFICATION.md). |
 | 4 | Responsive — desktop, tablet, and mobile. Board maintains square aspect ratio. |
 | 5 | Click-to-move only. Legal-move indicators shown on click. Simple CSS transition on piece movement. No drag-and-drop. |
 | 6 | No sound effects for v1. |
-| 7 | JWT stored in Zustand in-memory store. Sent as `Authorization: Bearer <token>` for HTTP and `auth.token` for Socket.IO. On page refresh the token is lost and the user re-authenticates. No cookies, no localStorage, no sessionStorage. |
+| 7 | ~~JWT in memory only; lost on refresh.~~ **Superseded:** the JWT is persisted to `localStorage` so the session survives a refresh. Still sent as `Authorization: Bearer <token>` for HTTP and `auth.token` for Socket.IO. See §17. |
 | 8 | Use existing `GET /api/v1/users/me` endpoint for current-user fetch (requires valid token). |
 | 9 | No mandatory 30-second post-game screen. Show game-end overlay immediately with navigation options (Home / History). |
 | 10 | 30-second per-turn countdown displayed in the game UI. Backend is authoritative; frontend emits `moveTimeout` when countdown reaches zero. |
@@ -44,6 +46,7 @@
 | 13 | Private rooms: display 6-char code + copy button. Separate "Join Room" input on Home. No share links. |
 | 14 | Profile page is view-only (name, username, email, DOB, profile image). Logout action accessible from profile. |
 | 15 | No spectator mode, no draw offers in v1. |
+| 16 | **Play against Bot** — single-player games against a server-side bot. See §16. |
 
 ---
 
@@ -96,7 +99,9 @@ src/
 │   │   └── index.tsx                   # AuthPage (3-step OTP flow)
 │   │
 │   ├── home/
-│   │   └── index.tsx                   # HomePage (matchmaking hub)
+│   │   ├── component/
+│   │   │   └── MenuButton.tsx          # Icon + label row in the Home menu
+│   │   └── index.tsx                   # HomePage (menu / friend views)
 │   │
 │   ├── matchmaking/
 │   │   ├── component/
@@ -127,13 +132,14 @@ src/
 │   │
 │   ├── history/
 │   │   ├── component/
+│   │   │   ├── GameHistoryPanel.tsx    # List + pagination, embedded in /profile
 │   │   │   ├── GameHistoryCard.tsx     # Game summary (opponent, result, date)
+│   │   │   ├── BotBadge.tsx            # "BOT" marker for bot games
 │   │   │   └── MoveTable.tsx           # Full move list in detail view
 │   │   ├── service.ts                  # listGames, getGameDetail API calls
 │   │   ├── type.ts                     # Game, Move, Pagination, PlayerInfo
-│   │   ├── HistoryPage.tsx             # Completed games list with pagination
 │   │   ├── HistoryDetailPage.tsx       # Single game detail + moves
-│   │   └── index.ts                    # Barrel export (both pages)
+│   │   └── index.ts                    # Barrel export (panel + detail page)
 │   │
 │   └── profile/
 │       ├── component/
@@ -147,20 +153,19 @@ src/
 │   │   ├── Input.tsx                   # Styled text input
 │   │   ├── Modal.tsx                   # Centered overlay modal
 │   │   ├── Spinner.tsx                 # Loading spinner
-│   │   ├── ThemeToggle.tsx             # Dark/light mode toggle button
 │   │   └── Avatar.tsx                  # Profile image circle with fallback
 │   └── layout/
 │       ├── AppLayout.tsx               # Shell with top bar + socket init
-│       ├── TopBar.tsx                  # App name, profile icon, theme toggle
+│       ├── TopBar.tsx                  # Logo, app name, profile icon
 │       ├── ProtectedRoute.tsx          # Auth guard → /auth if no token
 │       └── PublicRoute.tsx             # Guest guard → /home if token exists
 │
 ├── hooks/                              # Shared hooks
-│   └── useSocket.ts                    # Socket lifecycle + all event wiring
+│   ├── useSocket.ts                    # Socket lifecycle + all event wiring
+│   └── useAuthBootstrap.ts             # Validates the persisted token on boot
 │
 ├── store/                              # Shared Zustand stores
-│   ├── useAuthStore.ts                 # Auth state — token, user, login/logout
-│   └── useThemeStore.ts                # Dark mode toggle (persisted to localStorage)
+│   └── useAuthStore.ts                 # Auth state — token, user, login/logout
 │
 ├── services/                           # Shared service layer
 │   ├── api.ts                          # Fetch wrapper, ApiResponse type, ApiError class
@@ -205,9 +210,9 @@ feature/<name>/
 | `/auth` | `AuthPage` | Public only | OTP login / register flow |
 | `/home` | `HomePage` | Protected | Matchmaking hub |
 | `/game/:gameId` | `GamePage` | Protected | Active chess game |
-| `/history` | `HistoryPage` | Protected | Completed games list |
+| `/history` | — | Protected | Redirects to `/profile` (history moved there) |
 | `/history/:gameId` | `HistoryDetailPage` | Protected | Single game detail + moves |
-| `/profile` | `ProfilePage` | Protected | View-only profile + logout |
+| `/profile` | `ProfilePage` | Protected | Profile + game history + logout |
 | `*` | — | — | Redirect to `/home` (authed) or `/auth` (guest) |
 
 ### Route Guards
@@ -216,7 +221,8 @@ feature/<name>/
 
 **`PublicRoute`**: Checks `useAuthStore.token`. If exists, redirect to `/home`.
 
-> Since JWT is in-memory only, a page refresh clears auth and the user lands on `/auth`.
+> The JWT is persisted, so a refresh keeps the user signed in. The router is
+> held back until the stored token is validated — see §17.
 
 ---
 
@@ -266,20 +272,22 @@ Shown when `gameEnded` event is received. Displays:
 ### 6.1 `useAuthStore`
 
 ```ts
+type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
 interface AuthState {
   token: string | null;
   user: User | null;
-  isAuthenticated: boolean;
+  status: AuthStatus;
 
   setAuth: (token: string, user: User) => void;
   clearAuth: () => void;
 }
 ```
 
-- `setAuth` is called after `verifyOtp` (existing user) or `register` (new user).
-- `clearAuth` is called on logout and clears token + user. Socket disconnects via the `useSocket` hook reacting to token becoming null.
-- `isAuthenticated` is derived: `token !== null && user !== null`.
-- Token loss on refresh is expected — user re-authenticates via OTP.
+- `setAuth` is called after `verifyOtp` (existing user) or `register` (new user), and again on boot once the stored token is validated.
+- `clearAuth` is called on logout, on a 401, and on a failed boot. Socket disconnects via the `useSocket` hook reacting to token becoming null.
+- Wrapped in zustand's `persist` middleware under the key `checkmate-auth`. `partialize` stores **only the token** — the user is re-fetched each boot so it cannot go stale, and `status` must always start as `"loading"`.
+- Session restore is described in §17.
 
 ### 6.2 `useGameStore`
 
@@ -330,18 +338,10 @@ interface MatchmakingState {
 }
 ```
 
-### 6.4 `useThemeStore`
+### 6.4 ~~`useThemeStore`~~
 
-```ts
-interface ThemeState {
-  dark: boolean;
-  toggle: () => void;
-}
-```
-
-- On toggle, add/remove `dark` class on `<html>` element.
-- Persist preference to `localStorage` (theme preference only — not auth data).
-- Initialize from `localStorage` or `prefers-color-scheme` media query.
+**Superseded and removed.** The app is dark-only, so there is no theme state to
+hold — see §13.
 
 ---
 
@@ -418,15 +418,16 @@ The `useSocket` hook registers all listeners on mount:
 | `gameState` | `gameStore.setGameState(data)` — restore full board on reconnect |
 | `opponentDisconnected` | `gameStore.setOpponentConnected(false)` — show indicator |
 | `opponentReconnected` | `gameStore.setOpponentConnected(true)` — hide indicator |
-| `error` | Show generic error toast |
+| `error` | `matchmakingStore.setError(message)` — rendered inline on Home (§16.5) |
 
 ### 8.3 Client Emits
 
 | Client Event | Payload | Trigger |
 |--------------|---------|---------|
-| `joinQueue` | (none) | "Find Match" button |
+| `joinQueue` | (none) | "Play Online" button |
 | `leaveQueue` | (none) | "Cancel" during queue |
-| `createRoom` | (none) | "Create Room" button |
+| `createRoom` | (none) | "Create Room", inside Play with Friend |
+| `startBotGame` | (none) | "Play Bot" button (§16) |
 | `joinRoom` | `{ code }` | "Join" button with room code input |
 | `makeMove` | `{ gameId, from, to, promotion? }` | Click-to-move completes a legal move |
 | `resign` | `{ gameId }` | Resign button (after confirmation) |
@@ -490,29 +491,35 @@ Stage 3: REGISTER
 
 ### Home Page Layout
 
+The panel has two views, swapped by local `view` state — `menu` and `friend`.
+
 ```
-┌────────────────────────────────┐
-│  TopBar (Checkmate | Profile)  │
-├────────────────────────────────┤
-│                                │
-│   [  Find Match  ]             │  ← joinQueue
-│                                │
-│   ── or ──                     │
-│                                │
-│   [ Create Private Room ]      │  ← createRoom
-│                                │
-│   Enter Room Code              │
-│   [ ______ ] [ Join ]          │  ← joinRoom
-│                                │
-│   [ Game History ]             │  ← navigate /history
-│                                │
-└────────────────────────────────┘
+menu                              friend
+┌────────────────────────────┐    ┌────────────────────────────┐
+│ Play Chess                 │    │ ← Play with Friend         │
+│ 30 seconds per move        │    │                            │
+│                            │    │ [    Create Room     ]     │ ← createRoom
+│ [     Play Online    ]     │    │                            │
+│                            │    │ ────── or ──────           │
+│ [ 🤖  Play Bot       ]     │    │                            │
+│ [ 🤝  Play with Friend]────┼──▶ │ [ ______ ] [ Join ]        │ ← joinRoom
+│ [ 🕒  Game History   ]     │    │                            │
+└────────────────────────────┘    └────────────────────────────┘
+  ↑ joinQueue / startBotGame
 ```
+
+**Play Online** is the `accent` primary Button; the other three are
+`MenuButton` rows (`surface-raised`, icon + bold label). Game History renders as
+a link rather than a button, so it middle-clicks like one.
+
+Create Room and Join are grouped behind **Play with Friend** because they are
+two ways to do one thing — play a specific person — which leaves the menu to the
+three ways of *starting* a game.
 
 ### State Transitions
 
 ```
-idle ──[Find Match]──► queuing
+idle ──[Play Online]──► queuing
   │                       │
   │                       ├──[Cancel]──► idle
   │                       └──[gameStarted]──► navigate /game/:gameId
@@ -529,7 +536,7 @@ idle ──[Find Match]──► queuing
 
 **Queue status overlay**: When `status === "queuing"`, show a centered overlay with "Searching for opponent…" spinner and a "Cancel" button.
 
-**Room code display**: When `status === "in-room-waiting"`, show `RoomCodeDisplay` with the 6-char code and a copy-to-clipboard button. The user waits until an opponent joins and `gameStarted` fires.
+**Room code display**: When `status === "in-room-waiting"`, show `RoomCodeDisplay` with the 6-char code and a copy-to-clipboard button. The user waits until an opponent joins and `gameStarted` fires. A "Cancel" button opens a confirmation modal ("Are you sure you want to leave the room?"); confirming emits the `cancelRoom` socket event, which invalidates the code and transitions the store back to `idle` via the `roomCancelled` listener.
 
 ---
 
@@ -540,6 +547,12 @@ idle ──[Find Match]──► queuing
 1. On mount, check `useGameStore.gameId`:
    - If set (navigated from matchmaking) → board is already initialized from `gameStarted`.
    - If null but URL has `:gameId` (page refresh / direct nav) → no active game state in memory → redirect to `/home`. (Reconnection is handled automatically by the socket: on reconnect the server emits `gameState`, which the `useSocket` hook processes to populate the game store and navigate back to `/game/:gameId`.)
+
+> **This check runs on mount only** — it reads the store imperatively via
+> `useGameStore.getState()` rather than subscribing to `gameId`. Do not make it
+> reactive. The result overlay calls `resetGame()` before navigating away, and a
+> reactive guard fires on that clear and `replace`s the outbound navigation with
+> `/home` — which silently broke the overlay's **View Game** button.
 
 ### 11.2 Game Screen Layout
 
@@ -622,7 +635,11 @@ Mobile: Move list collapses below the board.
 
 ## 12. Game History Flow
 
-### 12.1 History List Page (`/history`)
+### 12.1 History Panel (on `/profile`)
+
+Game history is a panel on the profile page, not a route of its own —
+`/history` redirects to `/profile`. `GameHistoryPanel` owns its own fetching, so
+the profile page composes it without knowing about the games API.
 
 - On mount → call `listGames(page=1, limit=10)`.
 - Render a scrollable list of `GameHistoryCard` components.
@@ -636,7 +653,19 @@ Mobile: Move list collapses below the board.
 - Pagination: "Load More" button or infinite scroll (simple pagination with page increment).
 - Click a card → navigate to `/history/:gameId`.
 
-### 12.2 History Detail Page (`/history/:gameId`)
+### 12.2 Profile Page (`/profile`)
+
+Modelled on the chess.com member page — identity header, then stacked panels:
+
+- Header: `xl` avatar, username, name, joined date, email and date of birth,
+  with **Log Out** pushed right.
+- Body: `GameHistoryPanel`.
+
+Only fields the backend actually exposes are shown. Ratings, friends, views,
+online status, flair, awards and clubs have no data behind them and are omitted
+rather than faked.
+
+### 12.3 History Detail Page (`/history/:gameId`)
 
 - On mount → call `getGameDetail(gameId)`.
 - Display:
@@ -644,39 +673,21 @@ Mobile: Move list collapses below the board.
   - Full move table: move number | white's move (SAN) | black's move (SAN)
   - Ordered by `moveNumber` ascending.
   - Moves are laid out in a 2-column format per row (standard chess notation style).
-- Back button → navigate to `/history`.
+- Back button → navigate to `/profile`.
 
 ---
 
-## 13. Dark Mode
+## 13. Theme
 
-### Strategy
+**Superseded — dark only.** The light palette, `useThemeStore` and `ThemeToggle`
+were removed; `darkMode: "class"` is no longer set.
 
-- Tailwind's `class` strategy: dark mode activates when `<html class="dark">` is present.
-- `useThemeStore` manages the `dark` boolean, persisted in `localStorage("theme")`.
-- On app init, read `localStorage("theme")`. If absent, check `window.matchMedia("(prefers-color-scheme: dark)")`.
-- `ThemeToggle` button in `TopBar` calls `useThemeStore.toggle()`.
+The palette is modelled on chess.com's dark theme and declared once as Tailwind
+tokens in `tailwind.config.js` (`base`, `surface*`, `edge*`, `content*`,
+`accent*`, `danger`, `warning`, `info`, `board-*`). Components use those tokens
+and never raw hex or `dark:` variants.
 
-### tailwind.config.js update
-
-```js
-darkMode: "class"
-```
-
-### Color approach
-
-Define a minimal set of semantic color variables using Tailwind classes:
-
-| Token | Light | Dark |
-|-------|-------|------|
-| Background | `bg-gray-50` | `dark:bg-gray-900` |
-| Surface | `bg-white` | `dark:bg-gray-800` |
-| Text primary | `text-gray-900` | `dark:text-gray-100` |
-| Text secondary | `text-gray-600` | `dark:text-gray-400` |
-| Border | `border-gray-200` | `dark:border-gray-700` |
-| Primary accent | `bg-indigo-600` | `dark:bg-indigo-500` |
-| Danger | `bg-red-600` | `dark:bg-red-500` |
-| Success | `bg-green-600` | `dark:bg-green-500` |
+Full token table: [UI_SPECIFICATION.md §2.1](UI_SPECIFICATION.md).
 
 ---
 
@@ -713,6 +724,9 @@ This guarantees the board is always square regardless of viewport.
 
 ## 15. Phased Build Order
 
+> This records the original build order. Individual steps have since been
+> superseded — see §13 (theme) and §16 (bot) — and the current structure is §3.
+
 ### Phase 1: Foundation
 
 **Goal:** Project skeleton with routing, auth, and theme.
@@ -723,8 +737,8 @@ This guarantees the board is always square regardless of viewport.
 | 1.2 | Set up TypeScript types for all backend entities and socket events | `src/types/*` |
 | 1.3 | Set up constants and api fetch wrapper | `src/utils/constants.ts`, `src/services/api.ts` |
 | 1.4 | Create `useAuthStore` | `src/stores/useAuthStore.ts` |
-| 1.5 | Create `useThemeStore` + dark mode init + `tailwind.config.js` update | `src/stores/useThemeStore.ts` |
-| 1.6 | Build UI primitives: Button, Input, Modal, Spinner, Avatar, ThemeToggle | `src/components/ui/*` |
+| 1.5 | ~~Create `useThemeStore` + dark mode init~~ → superseded by dark-only tokens (§13) | `tailwind.config.js` |
+| 1.6 | Build UI primitives: Button, Input, Modal, Spinner, Avatar | `component/ui/*` |
 | 1.7 | Build AppLayout + TopBar | `src/components/layout/*` |
 | 1.8 | Set up React Router with ProtectedRoute / PublicRoute guards | `src/routes/*`, `src/App.tsx` |
 | 1.9 | Build auth API functions | `src/services/authApi.ts` |
@@ -787,7 +801,7 @@ This guarantees the board is always square regardless of viewport.
 | 4.1 | Build game API functions (listGames, getGameDetail) | `src/services/gameApi.ts` |
 | 4.2 | Build user API function (getMe) | `src/services/userApi.ts` |
 | 4.3 | Build GameHistoryCard | `src/components/history/GameHistoryCard.tsx` |
-| 4.4 | Build HistoryPage with pagination | `src/pages/HistoryPage.tsx` |
+| 4.4 | Build the game history list with pagination | `feature/history/component/GameHistoryPanel.tsx` |
 | 4.5 | Build MoveTable for detail view | `src/components/history/MoveTable.tsx` |
 | 4.6 | Build HistoryDetailPage | `src/pages/HistoryDetailPage.tsx` |
 | 4.7 | Build ProfileCard + ProfilePage with logout | `src/pages/ProfilePage.tsx`, `src/components/profile/ProfileCard.tsx` |
@@ -810,6 +824,152 @@ This guarantees the board is always square regardless of viewport.
 | 5.6 | Accessibility basics — keyboard navigation, focus indicators, aria labels on interactive elements |
 
 **Milestone:** Production-ready v1.
+
+---
+
+## 16. Play Against Bot
+
+Single-player games against a server-side bot, added by
+[checkmate-API#1](https://github.com/spandanam-tech/checkmate-API/pull/1).
+
+### 16.1 What the backend does
+
+The bot is a **real `User` document** (`checkmate_bot` / "Checkmate Bot"), so
+`whitePlayerId`, `blackPlayerId` and `Move.playerId` stay ordinary refs and every
+existing path — persistence, history population, resignation, timeout — works on
+bot games unchanged.
+
+| Fact | Consequence for the frontend |
+|------|------------------------------|
+| `startBotGame` never touches the queue or room codes | Matchmaking state is untouched; no new status value |
+| Colours are random, as in multiplayer | No colour picker; keep using `yourColor` |
+| If the bot draws white it moves immediately after `gameStarted` | Nothing to do — the `moveMade` handler already covers it |
+| One `makeMove` produces two `moveMade` events (player, then bot) under one lock | Nothing to do — each is applied in order by the existing handler |
+| The bot has no socket | `opponentDisconnected` / `opponentReconnected` never fire; the banner stays hidden by itself |
+| The bot never forfeits on time | The human's `moveTimeout` already only fires on their own turn |
+| The bot plays a **uniformly random legal move** | No difficulty selector — the backend exposes none |
+
+**Therefore the move, timer, promotion, resign and reconnect paths need no
+changes at all.** The work is: one new emit, three optional payload fields, a
+button, a label, a badge, and an error surface.
+
+### 16.2 Contract delta
+
+**New client → server**
+
+| Event | Payload |
+|-------|---------|
+| `startBotGame` | (none) |
+
+**Changed server → client** — all additive and optional, so a missing `mode`
+means `MULTIPLAYER`:
+
+| Event | Added fields |
+|-------|--------------|
+| `gameStarted` | `mode: "BOT"`, `botPlayerId: string` |
+| `gameEnded` | `isBotGame: true`, `botPlayerId: string` |
+
+**Changed REST** — `GET /games` and `GET /games/:gameId` now return
+`game.mode: "MULTIPLAYER" \| "BOT"`.
+
+**New `error` messages** — `You are already in an active game`,
+`Failed to start bot game`.
+
+### 16.3 Decisions
+
+| # | Decision |
+|---|----------|
+| 1 | "Play Bot" is a `MenuButton` row on Home, directly below the "Play Online" primary (§10). |
+| 2 | The in-game opponent label for a bot game is **"Checkmate Bot"**, a frontend constant matching the backend's `BOT_NAME`, so the game screen and history agree. |
+| 3 | History shows a small **BOT** badge, driven by the new `mode` field. |
+| 4 | Socket `error` payloads are stored on the matchmaking store and rendered inline on Home. This replaces the existing empty `error` handler, which silently swallowed every server error. |
+| 5 | No difficulty selector, no colour choice, no bot avatar — the backend supports none of them. |
+
+### 16.4 File-by-file change list
+
+| File | Change |
+|------|--------|
+| `feature/game/type.ts` | Add `GameMode`; add optional `mode` / `botPlayerId` to `GameStartedPayload`, `isBotGame` / `botPlayerId` to `GameEndedPayload` |
+| `feature/game/store.ts` | Track `botPlayerId: string \| null`; set from `gameStarted`, cleared by `resetGame` |
+| `feature/matchmaking/store.ts` | Add `error: string \| null` + `setError`; existing actions clear it |
+| `hooks/useSocket.ts` | `error` → `setError(data.message)` (was a no-op) |
+| `feature/home/index.tsx` | "Play Bot" button emitting `startBotGame`; render the inline error |
+| `feature/game/index.tsx` | Opponent name resolves to `BOT_NAME` when the opponent is `botPlayerId` |
+| `utils/constants.ts` | `BOT_NAME = "Checkmate Bot"` |
+| `feature/history/type.ts` | Add `mode: GameMode` to `Game` |
+| `feature/history/component/GameHistoryCard.tsx` | BOT badge |
+| `feature/history/HistoryDetailPage.tsx` | BOT badge in the summary header |
+
+No new components, hooks, stores or routes.
+
+### 16.5 Error surface
+
+`useSocket`'s `error` handler writes `message` to the matchmaking store. Home
+renders it as one `danger` line beneath the action buttons, and every Home action
+clears it first, so a stale message never outlives the next attempt.
+
+This is deliberately narrower than the toast system in
+[UI_SPECIFICATION.md §6](UI_SPECIFICATION.md) — that remains unbuilt, and
+`moveRejected` is still unsurfaced. Recorded in REQUIREMENTS §16.1.
+
+---
+
+## 17. Session Persistence
+
+The JWT is persisted to `localStorage` so a refresh does not sign the user out.
+
+### 17.1 What is stored
+
+Only the token, under the key `checkmate-auth`, via zustand's `persist`
+middleware. The user object is deliberately **not** stored: it would go stale
+the moment a profile changed, and it is one call to re-fetch.
+
+### 17.2 Boot sequence
+
+```
+app start
+   │
+   ├─ persist rehydrates token from localStorage (synchronous)
+   │
+   └─ useAuthBootstrap:
+        no token  → status = "unauthenticated"
+        token     → GET /api/v1/users/me
+                      200 → setAuth(token, user) → status = "authenticated"
+                      any failure → clearAuth()  → status = "unauthenticated"
+```
+
+`App` renders a spinner while `status === "loading"` and mounts the router only
+afterwards. **This gate is the point of the design:** the route guards read the
+token synchronously, so without it they would run before the session resolved
+and bounce the user to `/auth` on every refresh. Holding the router back means
+`ProtectedRoute` and `PublicRoute` stay as simple token checks and needed no
+change.
+
+### 17.3 Why boot re-validates
+
+Access tokens last **24h** and the backend has no refresh endpoint — auth is
+only `send-otp`, `verify-otp` and `register`. A stored token is therefore often
+expired by the time the user returns, so `getMe()` doubles as validation: an
+expired token sends the user cleanly to `/auth` instead of reaching a socket
+connection that would then fail to authenticate.
+
+**Any** failure clears the session, not just a 401. Without a user there is no
+`_id` for the game and history screens, so there is nothing useful to render.
+The trade-off is that a network blip at boot signs the user out; retry logic was
+judged not worth the complexity for a 24h token.
+
+### 17.4 Storage trade-off
+
+| Option | Survives | XSS exposure | Backend work |
+|--------|----------|--------------|--------------|
+| `localStorage` *(chosen)* | Refresh + browser restart | Readable by injected script | None |
+| `sessionStorage` | Refresh, not tab close | Same, narrower window | None |
+| httpOnly cookie | Refresh + restart | Not script-readable | Significant |
+
+An httpOnly cookie is genuinely more secure but needs `Set-Cookie`, CORS
+credentials and CSRF protection on the backend, and does not fit Socket.IO,
+which authenticates with `auth: { token }` and needs the value in JS anyway.
+Worth revisiting alongside a refresh-token flow.
 
 ---
 
@@ -837,6 +997,7 @@ This guarantees the board is always square regardless of viewport.
 | C→S | `joinQueue` | (none) |
 | C→S | `leaveQueue` | (none) |
 | C→S | `createRoom` | (none) |
+| C→S | `startBotGame` | (none) |
 | C→S | `joinRoom` | `{ code }` |
 | C→S | `makeMove` | `{ gameId, from, to, promotion? }` |
 | C→S | `resign` | `{ gameId }` |
@@ -844,10 +1005,10 @@ This guarantees the board is always square regardless of viewport.
 | S→C | `queueJoined` | (none) |
 | S→C | `queueLeft` | (none) |
 | S→C | `roomCreated` | `{ code }` |
-| S→C | `gameStarted` | `{ gameId, whitePlayerId, blackPlayerId, fen, yourColor, turnStartedAt }` |
+| S→C | `gameStarted` | `{ gameId, whitePlayerId, blackPlayerId, fen, yourColor, turnStartedAt }` + `{ mode, botPlayerId }` in bot games |
 | S→C | `moveMade` | `{ gameId, from, to, piece, capturedPiece, promotion, notation, fen, moveNumber, currentTurn, isCheck, turnStartedAt }` |
 | S→C | `moveRejected` | `{ gameId, reason }` |
-| S→C | `gameEnded` | `{ gameId, status, result, winnerId }` |
+| S→C | `gameEnded` | `{ gameId, status, result, winnerId }` + `{ isBotGame, botPlayerId }` in bot games |
 | S→C | `gameState` | `{ gameId, fen, whitePlayerId, blackPlayerId, currentTurn, turnStartedAt, moveNumber, status, lastMove }` |
 | S→C | `opponentDisconnected` | `{ gameId }` |
 | S→C | `opponentReconnected` | `{ gameId }` |
@@ -857,7 +1018,7 @@ This guarantees the board is always square regardless of viewport.
 
 **User:** `_id, username, name, email, dateOfBirth, profileImage, createdAt, updatedAt`
 
-**Game:** `_id, whitePlayerId, blackPlayerId, winnerId, status, result, startedAt, endedAt, totalMoves, createdAt, updatedAt`
+**Game:** `_id, whitePlayerId, blackPlayerId, winnerId, status, result, mode, startedAt, endedAt, totalMoves, createdAt, updatedAt`
 
 **Move:** `_id, gameId, moveNumber, playerId, from, to, piece, capturedPiece, promotion, notation, createdAt, updatedAt`
 
@@ -866,3 +1027,4 @@ This guarantees the board is always square regardless of viewport.
 - **GameStatus:** `ACTIVE`, `COMPLETED`, `ABANDONED`
 - **GameResult:** `CHECKMATE`, `RESIGNATION`, `TIMEOUT`, `DRAW`
 - **PieceColor:** `white`, `black`
+- **GameMode:** `MULTIPLAYER`, `BOT`

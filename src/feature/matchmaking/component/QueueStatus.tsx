@@ -8,9 +8,9 @@ export default function QueueStatus() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl bg-white p-8 shadow-lg dark:bg-gray-800">
+    <div className="flex flex-col items-center gap-4 rounded-lg border border-edge bg-surface p-8 shadow-raised">
       <Spinner size="lg" />
-      <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+      <p className="text-lg font-semibold text-content">
         Searching for opponent...
       </p>
       <Button variant="secondary" onClick={handleCancel}>

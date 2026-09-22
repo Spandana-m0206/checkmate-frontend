@@ -9,13 +9,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600",
+    "bg-accent text-accent-ink border-b-[3px] border-accent-pressed hover:bg-accent-hover active:border-b-0 active:mt-[3px]",
   secondary:
-    "bg-gray-200 text-gray-900 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
+    "bg-surface-raised text-content border-b-[3px] border-surface-sunken hover:bg-edge-strong active:border-b-0 active:mt-[3px]",
   danger:
-    "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600",
-  ghost:
-    "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800",
+    "bg-danger text-content border-b-[3px] border-danger/60 hover:bg-danger-hover active:border-b-0 active:mt-[3px]",
+  ghost: "bg-transparent text-content-muted hover:bg-surface-raised hover:text-content",
 };
 
 export default function Button({
@@ -29,7 +28,7 @@ export default function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-gray-900 ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-md px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-base disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {loading && (

@@ -83,10 +83,10 @@ export default function RegisterForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-bold text-content">
           Create Account
         </h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-1 text-sm text-content-muted">
           Set up your profile to start playing
         </p>
       </div>
@@ -96,7 +96,7 @@ export default function RegisterForm({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-gray-300 hover:border-indigo-500 dark:border-gray-600 dark:hover:border-indigo-400"
+          className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-edge-strong transition-colors hover:border-accent"
         >
           {imagePreview ? (
             <img
@@ -106,7 +106,7 @@ export default function RegisterForm({
             />
           ) : (
             <svg
-              className="h-8 w-8 text-gray-400"
+              className="h-8 w-8 text-content-subtle"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -120,7 +120,7 @@ export default function RegisterForm({
             </svg>
           )}
         </button>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-content-subtle">
           Profile photo (optional)
         </span>
         <input
@@ -158,7 +158,7 @@ export default function RegisterForm({
       />
 
       {errors.form && (
-        <p className="text-sm text-red-600 dark:text-red-400">{errors.form}</p>
+        <p className="text-sm text-danger-hover">{errors.form}</p>
       )}
 
       <Button type="submit" loading={loading} className="w-full">

@@ -1,5 +1,6 @@
-import { Link } from "react-router";
+import { useState } from "react";
 import Button from "../../component/ui/Button";
+import MenuButton from "./component/MenuButton";
 import {
   QueueStatus,
   RoomCodeDisplay,
@@ -7,16 +8,25 @@ import {
   useMatchmakingStore,
 } from "../matchmaking";
 import { getSocket } from "../../services/socket";
+import boardImage from "../../assets/board/board.png";
+
+type HomeView = "menu" | "friend";
 
 export default function HomePage() {
-  const { status, roomCode } = useMatchmakingStore();
+  const { status, roomCode, error } = useMatchmakingStore();
+  const clearError = useMatchmakingStore((s) => s.clearError);
+  const [view, setView] = useState<HomeView>("menu");
 
-  function handleFindMatch() {
-    getSocket()?.emit("joinQueue");
+  // Clear any previous server error so a stale message never outlives the
+  // next attempt.
+  function emit(event: string) {
+    clearError();
+    getSocket()?.emit(event);
   }
 
-  function handleCreateRoom() {
-    getSocket()?.emit("createRoom");
+  function showView(next: HomeView) {
+    clearError();
+    setView(next);
   }
 
   // Queuing overlay
@@ -38,48 +48,74 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Checkmate
-          </h1>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">
-            Ready to play?
-          </p>
+    <div className="flex flex-1 items-center justify-center p-4">
+      <div className="flex w-full max-w-3xl flex-col gap-4 md:flex-row">
+        {/* Play panel */}
+        <div className="w-full rounded-lg border border-edge bg-surface p-5 md:max-w-xs">
+          {view === "menu" ? (
+            <>
+              <h1 className="text-xl font-bold text-content">Play Chess</h1>
+              <p className="mt-1 text-sm text-content-muted">
+                30 seconds per move
+              </p>
+
+              <div className="mt-4 space-y-2">
+                <Button onClick={() => emit("joinQueue")} className="w-full">
+                  Play Online
+                </Button>
+
+                <MenuButton
+                  icon="🤖"
+                  label="Play Bot"
+                  onClick={() => emit("startBotGame")}
+                />
+                <MenuButton
+                  icon="🤝"
+                  label="Play with Friend"
+                  onClick={() => showView("friend")}
+                />
+                <MenuButton icon="👤" label="Profile" to="/profile" />
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => showView("menu")}
+                className="flex items-center gap-2 text-sm font-semibold text-content-muted transition-colors hover:text-content"
+              >
+                <span aria-hidden="true">←</span> Play with Friend
+              </button>
+
+              <div className="mt-4 space-y-3">
+                <Button onClick={() => emit("createRoom")} className="w-full">
+                  Create Room
+                </Button>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-edge" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-content-subtle">
+                    or
+                  </span>
+                  <div className="h-px flex-1 bg-edge" />
+                </div>
+
+                <JoinRoomForm />
+              </div>
+            </>
+          )}
+
+          {error && <p className="mt-3 text-sm text-danger-hover">{error}</p>}
         </div>
 
-        <div className="space-y-3">
-          <Button onClick={handleFindMatch} className="w-full">
-            Find Match
-          </Button>
-
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              or
-            </span>
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-          </div>
-
-          <Button
-            variant="secondary"
-            onClick={handleCreateRoom}
-            className="w-full"
-          >
-            Create Private Room
-          </Button>
-
-          <JoinRoomForm />
-        </div>
-
-        <div className="pt-2">
-          <Link
-            to="/history"
-            className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            Game History
-          </Link>
+        {/* Board preview */}
+        <div className="hidden flex-1 md:block">
+          <img
+            src={boardImage}
+            alt=""
+            className="w-full rounded-lg"
+            draggable={false}
+          />
         </div>
       </div>
     </div>

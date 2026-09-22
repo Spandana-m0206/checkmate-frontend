@@ -22,10 +22,10 @@ export default function ResignButton() {
       </Button>
 
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-2 text-lg font-semibold text-content">
           Resign?
         </h2>
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        <p className="mb-4 text-sm text-content-muted">
           Are you sure you want to resign? Your opponent will win the game.
         </p>
         <div className="flex gap-3">

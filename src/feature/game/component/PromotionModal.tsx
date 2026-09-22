@@ -1,5 +1,5 @@
 import Modal from "../../../component/ui/Modal";
-import { getPieceSymbol } from "../../../utils/chess";
+import { getPieceImage } from "../../../utils/chess";
 
 interface PromotionModalProps {
   color: "w" | "b";
@@ -21,7 +21,7 @@ export default function PromotionModal({
   return (
     <Modal open>
       <div className="text-center">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-4 text-lg font-semibold text-content">
           Promote pawn to
         </h2>
         <div className="flex justify-center gap-3">
@@ -29,10 +29,15 @@ export default function PromotionModal({
             <button
               key={piece}
               onClick={() => onSelect(piece)}
-              className="flex h-14 w-14 items-center justify-center rounded-lg border-2 border-gray-200 text-3xl transition-colors hover:border-indigo-500 hover:bg-indigo-50 dark:border-gray-600 dark:hover:border-indigo-400 dark:hover:bg-indigo-900/30"
+              className="flex h-14 w-14 items-center justify-center rounded-md border-2 border-edge bg-surface-sunken transition-colors hover:border-accent hover:bg-surface-raised"
               aria-label={PIECE_NAMES[piece]}
             >
-              {getPieceSymbol(color, piece)}
+              <img
+                src={getPieceImage(color, piece)}
+                alt={PIECE_NAMES[piece]}
+                className="h-10 w-10"
+                draggable={false}
+              />
             </button>
           ))}
         </div>

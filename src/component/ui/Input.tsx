@@ -14,7 +14,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="mb-1 block text-sm font-medium text-content-muted"
           >
             {label}
           </label>
@@ -22,12 +22,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
-          className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-400" : ""} ${className}`}
+          className={`w-full rounded-md border border-edge bg-surface-sunken px-3 py-2.5 text-sm text-content placeholder-content-subtle transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50 ${error ? "border-danger focus:border-danger focus:ring-danger" : ""} ${className}`}
           {...props}
         />
-        {error && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
-        )}
+        {error && <p className="mt-1 text-sm text-danger-hover">{error}</p>}
       </div>
     );
   },

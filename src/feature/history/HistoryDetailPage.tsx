@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router";
 import Spinner from "../../component/ui/Spinner";
 import Avatar from "../../component/ui/Avatar";
 import MoveTable from "./component/MoveTable";
+import BotBadge from "./component/BotBadge";
 import { getGameDetail } from "./service";
 import { useAuthStore } from "../../store/useAuthStore";
 import { formatDateTime, getResultLabel, getOutcome } from "../../utils/format";
@@ -43,9 +44,9 @@ export default function HistoryDetailPage() {
   if (error || !game) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2">
-        <p className="text-red-600 dark:text-red-400">{error || "Game not found"}</p>
-        <Link to="/history" className="text-sm text-indigo-600 hover:underline dark:text-indigo-400">
-          Back to history
+        <p className="text-danger-hover">{error || "Game not found"}</p>
+        <Link to="/profile" className="text-sm text-accent hover:underline">
+          Back to profile
         </Link>
       </div>
     );
@@ -58,24 +59,25 @@ export default function HistoryDetailPage() {
   return (
     <div className="mx-auto w-full max-w-2xl p-4">
       <Link
-        to="/history"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+        to="/profile"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-content-muted transition-colors hover:text-content"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Back to history
+        Back to profile
       </Link>
 
-      <div className="mb-6 rounded-lg bg-white p-4 dark:bg-gray-800">
+      <div className="mb-6 rounded-lg border border-edge bg-surface p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar src={opponent.profileImage} alt={opponent.name} size="lg" />
             <div>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
+              <p className="flex items-center gap-2 font-semibold text-content">
                 vs {opponent.name}
+                {game.mode === "BOT" && <BotBadge />}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-content-subtle">
                 @{opponent.username}
               </p>
             </div>
@@ -84,33 +86,33 @@ export default function HistoryDetailPage() {
             <p
               className={`text-lg font-bold capitalize ${
                 outcome === "win"
-                  ? "text-green-600 dark:text-green-400"
+                  ? "text-accent"
                   : outcome === "loss"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-gray-600 dark:text-gray-400"
+                    ? "text-danger-hover"
+                    : "text-content-muted"
               }`}
             >
               {outcome}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-content-subtle">
               {getResultLabel(game.result!)}
             </p>
           </div>
         </div>
-        <div className="mt-3 flex gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-3 flex gap-4 text-sm text-content-subtle">
           <span>{game.totalMoves} moves</span>
           <span>Played as {isWhite ? "white" : "black"}</span>
           <span>{formatDateTime(game.endedAt!)}</span>
         </div>
       </div>
 
-      <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="mb-2 text-lg font-semibold text-content">
         Moves
       </h2>
       {moves.length > 0 ? (
         <MoveTable moves={moves} whitePlayerId={game.whitePlayerId._id} />
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No moves recorded</p>
+        <p className="text-sm text-content-subtle">No moves recorded</p>
       )}
     </div>
   );

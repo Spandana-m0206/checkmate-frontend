@@ -6,7 +6,7 @@ export default function AppLayout() {
   useSocket();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen flex-col bg-base">
       <TopBar />
       <main className="flex flex-1 flex-col">
         <Outlet />

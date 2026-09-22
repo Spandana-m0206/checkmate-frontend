@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate } from "react-router";
 import ChessBoard from "./component/ChessBoard";
 import PlayerBar from "./component/PlayerBar";
 import MoveList from "./component/MoveList";
@@ -9,9 +9,16 @@ import { useGameStore } from "./store";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useTurnTimer } from "./hooks/useTurnTimer";
 import { getSocket } from "../../services/socket";
+import { BOT_NAME } from "../../utils/constants";
+
+/** The bot is a real user, so it is identified by id rather than by mode. */
+function opponentLabel(opponentId: string | null, botPlayerId: string | null) {
+  if (!opponentId) return "Opponent";
+  if (opponentId === botPlayerId) return BOT_NAME;
+  return `Player ${opponentId.slice(-4)}`;
+}
 
 export default function GamePage() {
-  const { gameId: urlGameId } = useParams();
   const navigate = useNavigate();
 
   const gameId = useGameStore((s) => s.gameId);
@@ -24,13 +31,18 @@ export default function GamePage() {
   const opponentConnected = useGameStore((s) => s.opponentConnected);
   const whitePlayerId = useGameStore((s) => s.whitePlayerId);
   const blackPlayerId = useGameStore((s) => s.blackPlayerId);
+  const botPlayerId = useGameStore((s) => s.botPlayerId);
   const user = useAuthStore((s) => s.user);
 
+  // A refresh or a direct link lands here with no game in memory, so there is
+  // nothing to render. Checked on arrival only: the result overlay clears the
+  // store on its way out, and a reactive check would fire on that and replace
+  // the navigation already under way with /home.
   useEffect(() => {
-    if (!gameId && urlGameId) {
+    if (!useGameStore.getState().gameId) {
       navigate("/home", { replace: true });
     }
-  }, [gameId, urlGameId, navigate]);
+  }, [navigate]);
 
   const handleTimeout = useCallback(() => {
     if (gameId && currentTurn === myColor) {
@@ -59,7 +71,7 @@ export default function GamePage() {
   const myImage = user.profileImage;
 
   const opponentId = isWhite ? blackPlayerId : whitePlayerId;
-  const opponentName = opponentId ? `Player ${opponentId.slice(-4)}` : "Opponent";
+  const opponentName = opponentLabel(opponentId, botPlayerId);
 
   const topIsCurrentTurn = currentTurn === (isWhite ? "black" : "white");
   const bottomIsCurrentTurn = currentTurn === myColor;
@@ -69,7 +81,7 @@ export default function GamePage() {
       {/* Game area */}
       <div className="flex w-full max-w-[560px] flex-col gap-2">
         {!opponentConnected && status === "ACTIVE" && (
-          <div className="rounded-lg bg-yellow-100 px-3 py-2 text-center text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+          <div className="rounded-md border border-warning/40 bg-warning/15 px-3 py-2 text-center text-sm text-warning">
             Opponent disconnected — waiting for reconnection...
           </div>
         )}
@@ -105,8 +117,8 @@ export default function GamePage() {
         )}
       </div>
 
-      <div className="w-full rounded-lg bg-white p-3 dark:bg-gray-800 lg:h-[560px] lg:w-64">
-        <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <div className="w-full rounded-lg border border-edge bg-surface p-3 lg:h-[560px] lg:w-64">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-subtle">
           Moves
         </h3>
         <div className="h-40 overflow-y-auto lg:h-[500px]">
