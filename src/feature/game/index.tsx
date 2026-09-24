@@ -11,13 +11,6 @@ import { useTurnTimer } from "./hooks/useTurnTimer";
 import { getSocket } from "../../services/socket";
 import { BOT_NAME } from "../../utils/constants";
 
-/** The bot is a real user, so it is identified by id rather than by mode. */
-function opponentLabel(opponentId: string | null, botPlayerId: string | null) {
-  if (!opponentId) return "Opponent";
-  if (opponentId === botPlayerId) return BOT_NAME;
-  return `Player ${opponentId.slice(-4)}`;
-}
-
 export default function GamePage() {
   const navigate = useNavigate();
 
@@ -29,8 +22,10 @@ export default function GamePage() {
   const status = useGameStore((s) => s.status);
   const result = useGameStore((s) => s.result);
   const opponentConnected = useGameStore((s) => s.opponentConnected);
-  const whitePlayerId = useGameStore((s) => s.whitePlayerId);
-  const blackPlayerId = useGameStore((s) => s.blackPlayerId);
+  const whiteUsername = useGameStore((s) => s.whiteUsername);
+  const whiteProfileImage = useGameStore((s) => s.whiteProfileImage);
+  const blackUsername = useGameStore((s) => s.blackUsername);
+  const blackProfileImage = useGameStore((s) => s.blackProfileImage);
   const botPlayerId = useGameStore((s) => s.botPlayerId);
   const user = useAuthStore((s) => s.user);
 
@@ -67,11 +62,13 @@ export default function GamePage() {
   }
 
   const isWhite = myColor === "white";
-  const myName = user.username;
-  const myImage = user.profileImage;
+  const myName = (isWhite ? whiteUsername : blackUsername) ?? user.username;
+  const myImage = (isWhite ? whiteProfileImage : blackProfileImage) ?? user.profileImage;
 
-  const opponentId = isWhite ? blackPlayerId : whitePlayerId;
-  const opponentName = opponentLabel(opponentId, botPlayerId);
+  const opponentName = isWhite
+    ? (botPlayerId ? BOT_NAME : blackUsername) ?? "Opponent"
+    : (botPlayerId ? BOT_NAME : whiteUsername) ?? "Opponent";
+  const opponentImage = isWhite ? blackProfileImage : whiteProfileImage;
 
   const topIsCurrentTurn = currentTurn === (isWhite ? "black" : "white");
   const bottomIsCurrentTurn = currentTurn === myColor;
@@ -88,6 +85,7 @@ export default function GamePage() {
 
         <PlayerBar
           name={opponentName}
+          profileImage={opponentImage}
           isCurrentTurn={topIsCurrentTurn}
           timerSeconds={
             topIsCurrentTurn ? opponentTimer.seconds : myTimer.seconds
@@ -117,13 +115,12 @@ export default function GamePage() {
         )}
       </div>
 
-      <div className="w-full rounded-lg border border-edge bg-surface p-3 lg:h-[560px] lg:w-64">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-content-subtle">
-          Moves
-        </h3>
-        <div className="h-40 overflow-y-auto lg:h-[500px]">
-          <MoveList moves={moves} />
-        </div>
+      <div className="w-full rounded-lg border border-edge bg-surface lg:h-[560px] lg:w-64">
+        <MoveList
+          moves={moves}
+          whiteName={(isWhite ? myName : opponentName) ?? "White"}
+          blackName={(isWhite ? opponentName : myName) ?? "Black"}
+        />
       </div>
     </div>
   );

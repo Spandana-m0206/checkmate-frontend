@@ -20,6 +20,10 @@ interface GameState {
   moves: MoveNotation[];
   whitePlayerId: string | null;
   blackPlayerId: string | null;
+  whiteUsername: string | null;
+  whiteProfileImage: string | null;
+  blackUsername: string | null;
+  blackProfileImage: string | null;
   botPlayerId: string | null;
   status: GameStatus | null;
   result: GameResult | null;
@@ -50,6 +54,10 @@ const initialState = {
   moves: [],
   whitePlayerId: null,
   blackPlayerId: null,
+  whiteUsername: null,
+  whiteProfileImage: null,
+  blackUsername: null,
+  blackProfileImage: null,
   botPlayerId: null,
   status: null,
   result: null,
@@ -75,6 +83,10 @@ export const useGameStore = create<GameState>((set) => ({
       moves: [],
       whitePlayerId: data.whitePlayerId,
       blackPlayerId: data.blackPlayerId,
+      whiteUsername: data.whiteUsername,
+      whiteProfileImage: data.whiteProfileImage,
+      blackUsername: data.blackUsername,
+      blackProfileImage: data.blackProfileImage,
       botPlayerId: data.botPlayerId ?? null,
       status: "ACTIVE",
       result: null,
@@ -98,7 +110,11 @@ export const useGameStore = create<GameState>((set) => ({
       legalMoves: [],
       moves: [
         ...state.moves,
-        { notation: data.notation, moveNumber: data.moveNumber },
+        {
+          notation: data.notation,
+          moveNumber: data.moveNumber,
+          capturedPiece: data.capturedPiece,
+        },
       ],
     })),
 

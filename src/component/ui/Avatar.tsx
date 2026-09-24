@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../../utils/constants";
+import { useState, useEffect } from "react";
 
 interface AvatarProps {
   src: string | null | undefined;
@@ -20,6 +20,13 @@ export default function Avatar({
   size = "md",
   className = "",
 }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  // Reset failure state when the image source changes (e.g. after upload).
+  useEffect(() => {
+    setImgFailed(false);
+  }, [src]);
+
   const initials = alt
     .split(" ")
     .map((w) => w[0])
@@ -27,11 +34,14 @@ export default function Avatar({
     .slice(0, 2)
     .toUpperCase();
 
-  if (src) {
+  if (src && !imgFailed) {
+    // Backend stores images as base64 data URIs (data:image/...).
+    // Use src directly — no /uploads/ prefix needed.
     return (
       <img
-        src={`${API_BASE_URL}/uploads/${src}`}
+        src={src}
         alt={alt}
+        onError={() => setImgFailed(true)}
         className={`rounded-full object-cover ${sizeClasses[size]} ${className}`}
       />
     );

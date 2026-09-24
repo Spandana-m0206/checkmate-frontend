@@ -17,19 +17,18 @@ export interface SendOtpResponse {
 }
 
 export interface VerifyOtpExistingUser {
-  token: string;
+  accessToken: string;
   user: User;
   isNewUser: false;
 }
 
 export interface VerifyOtpNewUser {
-  registrationToken: string;
   isNewUser: true;
 }
 
 export type VerifyOtpData = VerifyOtpExistingUser | VerifyOtpNewUser;
 
 export interface RegisterData {
-  token: string;
+  accessToken: string;
   user: User;
 }

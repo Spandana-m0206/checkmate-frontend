@@ -25,3 +25,9 @@ export function register(formData: FormData) {
     body: formData,
   });
 }
+
+export function logout() {
+  return apiFetch<ApiResponse<null>>("/api/v1/auth/logout", {
+    method: "POST",
+  });
+}
