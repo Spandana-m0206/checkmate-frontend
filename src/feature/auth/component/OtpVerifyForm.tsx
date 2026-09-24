@@ -4,11 +4,12 @@ import Input from "../../../component/ui/Input";
 import { verifyOtp } from "../service";
 import { useAuthStore } from "../../../store/useAuthStore";
 import { ApiError } from "../../../services/api";
+import { scheduleProactiveRefresh } from "../../../services/tokenManager";
 import type { VerifyOtpData } from "../type";
 
 interface OtpVerifyFormProps {
   email: string;
-  onNewUser: (registrationToken: string) => void;
+  onNewUser: () => void;
   onBack: () => void;
 }
 
@@ -38,9 +39,10 @@ export default function OtpVerifyForm({
       const data: VerifyOtpData = res.data;
 
       if (data.isNewUser) {
-        onNewUser(data.registrationToken);
+        onNewUser();
       } else {
-        setAuth(data.token, data.user);
+        setAuth(data.accessToken, data.user);
+        scheduleProactiveRefresh(data.accessToken, handleRefreshed);
       }
     } catch (err) {
       setError(
@@ -93,4 +95,9 @@ export default function OtpVerifyForm({
       </button>
     </form>
   );
+}
+
+function handleRefreshed(newToken: string) {
+  useAuthStore.getState().setToken(newToken);
+  scheduleProactiveRefresh(newToken, handleRefreshed);
 }

@@ -49,7 +49,7 @@ Checkmate is a two-player chess application where the backend is the single sour
 | **Game End Overlay** | Non-dismissable result screen showing outcome (checkmate, resignation, timeout, draw) with Home/View Game actions |
 | **Game History** | Paginated list of completed games on the profile page, with win/loss/draw badges and bot indicators |
 | **Game Detail** | Full move table for any completed game, with opponent info and result summary |
-| **Profile** | Displays user info (avatar, username, name, email, DOB, join date) with logout |
+| **Profile** | Displays user info with edit support: update name and DOB via modal, change profile photo by clicking avatar. Logout action. |
 | **Opponent Disconnect Banner** | Warning banner when the opponent's socket drops mid-game |
 | **Dark Mode** | Single dark theme — no light mode or theme toggle |
 | **Responsive Layout** | Desktop side-by-side layout; mobile stacked layout with adaptive board sizing |
@@ -960,7 +960,6 @@ These are features and improvements that were considered but not implemented wit
 | **Board flip** | Allow players to flip the board orientation mid-game |
 | **Pre-moves** | Queue a move while waiting for the opponent's turn |
 | **Game replay** | Step through moves on the history detail page with a visual board |
-| **Profile editing** | Update username, name, profile image from the profile page |
 | **Toast notifications** | A toast/snackbar system for transient feedback (move rejected, copy success, errors) |
 | **Connection status indicator** | A persistent pill in the UI showing socket connection state (Live / Reconnecting / Offline) |
 | **Spectator mode** | Allow third parties to watch an ongoing game |

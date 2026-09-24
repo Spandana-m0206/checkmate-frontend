@@ -4,15 +4,16 @@ import Input from "../../../component/ui/Input";
 import { register } from "../service";
 import { useAuthStore } from "../../../store/useAuthStore";
 import { ApiError } from "../../../services/api";
+import { scheduleProactiveRefresh } from "../../../services/tokenManager";
 
 interface RegisterFormProps {
-  registrationToken: string;
-  onTokenExpired: () => void;
+  email: string;
+  onEmailExpired: () => void;
 }
 
 export default function RegisterForm({
-  registrationToken,
-  onTokenExpired,
+  email,
+  onEmailExpired,
 }: RegisterFormProps) {
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
@@ -37,7 +38,20 @@ export default function RegisterForm({
 
     if (!username.trim()) newErrors.username = "Username is required";
     if (!name.trim()) newErrors.name = "Name is required";
-    if (!dateOfBirth) newErrors.dateOfBirth = "Date of birth is required";
+    if (!dateOfBirth) {
+      newErrors.dateOfBirth = "Date of birth is required";
+    } else {
+      const birth = new Date(dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        newErrors.dateOfBirth = "You must be at least 18 years old";
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -48,7 +62,7 @@ export default function RegisterForm({
     setLoading(true);
 
     const formData = new FormData();
-    formData.append("registrationToken", registrationToken);
+    formData.append("email", email);
     formData.append("username", username.trim().toLowerCase());
     formData.append("name", name.trim());
     formData.append("dateOfBirth", dateOfBirth);
@@ -58,17 +72,18 @@ export default function RegisterForm({
 
     try {
       const res = await register(formData);
-      setAuth(res.data.token, res.data.user);
+      setAuth(res.data.accessToken, res.data.user);
+      scheduleProactiveRefresh(res.data.accessToken, handleRefreshed);
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.statusCode === 401) {
-          onTokenExpired();
+          onEmailExpired();
           return;
         }
         if (err.message.toLowerCase().includes("username")) {
           setErrors({ username: err.message });
         } else if (err.message.toLowerCase().includes("email")) {
-          onTokenExpired();
+          onEmailExpired();
         } else {
           setErrors({ form: err.message });
         }
@@ -166,4 +181,9 @@ export default function RegisterForm({
       </Button>
     </form>
   );
+}
+
+function handleRefreshed(newToken: string) {
+  useAuthStore.getState().setToken(newToken);
+  scheduleProactiveRefresh(newToken, handleRefreshed);
 }

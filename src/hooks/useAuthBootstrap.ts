@@ -1,29 +1,55 @@
 import { useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { getMe } from "../feature/profile/service";
+import {
+  refreshAccessToken,
+  scheduleProactiveRefresh,
+} from "../services/tokenManager";
 
 /**
- * Resolves the persisted session once, on app start.
+ * Resolves the session once, on app start.
  *
- * The token survives a refresh in localStorage but the user does not, so it is
- * re-fetched here. The call doubles as token validation: access tokens last
- * 24h and the backend has no refresh endpoint, so a stored token is often
- * expired by the time the user returns.
- *
- * Any failure clears the session rather than guessing — without a user there
- * is no `_id` for the game and history screens to work from.
+ * The access token is in-memory only (lost on reload).  On boot we attempt a
+ * silent refresh via the HttpOnly refresh-token cookie.  If the cookie is valid
+ * the backend returns a new access token; we store it, fetch the user profile,
+ * and mark the session as authenticated.  Any failure lands the user on /auth.
  */
 export function useAuthBootstrap() {
   useEffect(() => {
-    const { token, setAuth, clearAuth } = useAuthStore.getState();
+    let cancelled = false;
 
-    if (!token) {
-      useAuthStore.setState({ status: "unauthenticated" });
-      return;
-    }
+    (async () => {
+      try {
+        const token = await refreshAccessToken();
+        if (cancelled) return;
 
-    getMe()
-      .then((res) => setAuth(token, res.data.user))
-      .catch(() => clearAuth());
+        if (!token) {
+          useAuthStore.getState().clearAuth();
+          return;
+        }
+
+        // Store the token so apiFetch can use it for the getMe call.
+        useAuthStore.getState().setToken(token);
+
+        const res = await getMe();
+        if (cancelled) return;
+
+        useAuthStore.getState().setAuth(token, res.data.user);
+        scheduleProactiveRefresh(token, handleRefreshed);
+      } catch {
+        if (!cancelled) {
+          useAuthStore.getState().clearAuth();
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+}
+
+function handleRefreshed(newToken: string) {
+  useAuthStore.getState().setToken(newToken);
+  scheduleProactiveRefresh(newToken, handleRefreshed);
 }

@@ -14,6 +14,7 @@ export function connectSocket(token: string): Socket {
 
   socket = io(API_BASE_URL, {
     auth: { token },
+    withCredentials: true,
   });
 
   return socket;

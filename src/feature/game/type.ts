@@ -6,6 +6,7 @@ export type GameMode = "MULTIPLAYER" | "BOT";
 export interface MoveNotation {
   notation: string;
   moveNumber: number;
+  capturedPiece: string | null;
 }
 
 // --- Socket event payloads ---
@@ -14,6 +15,10 @@ export interface GameStartedPayload {
   gameId: string;
   whitePlayerId: string;
   blackPlayerId: string;
+  whiteUsername: string;
+  whiteProfileImage: string | null;
+  blackUsername: string;
+  blackProfileImage: string | null;
   fen: string;
   yourColor: PieceColor;
   turnStartedAt: number;

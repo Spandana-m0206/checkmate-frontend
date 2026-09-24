@@ -8,22 +8,19 @@ type AuthStage = "send-otp" | "verify-otp" | "register";
 export default function AuthPage() {
   const [stage, setStage] = useState<AuthStage>("send-otp");
   const [email, setEmail] = useState("");
-  const [registrationToken, setRegistrationToken] = useState("");
 
   function handleOtpSent(sentEmail: string) {
     setEmail(sentEmail);
     setStage("verify-otp");
   }
 
-  function handleNewUser(token: string) {
-    setRegistrationToken(token);
+  function handleNewUser() {
     setStage("register");
   }
 
   function handleReset() {
     setStage("send-otp");
     setEmail("");
-    setRegistrationToken("");
   }
 
   return (
@@ -41,8 +38,8 @@ export default function AuthPage() {
 
         {stage === "register" && (
           <RegisterForm
-            registrationToken={registrationToken}
-            onTokenExpired={handleReset}
+            email={email}
+            onEmailExpired={handleReset}
           />
         )}
       </div>
